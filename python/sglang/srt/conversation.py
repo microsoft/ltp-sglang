@@ -866,6 +866,20 @@ register_conv_template(
     )
 )
 
+register_conv_template(
+    Conversation(
+        name="sigma",
+        system_template="<|endoftext|><|system|>{system_message}<|end|>",
+        system_message=(
+            "You are an AI assistant developed by Microsoft. "
+            "You are helpful for user to handle daily tasks."
+        ),
+        roles=("<|user|>", "<|assistant|>"),
+        sep_style=SeparatorStyle.NO_COLON_SINGLE,
+        sep="<|end|>",
+        stop_str= ["<|end|>", "<|endoftext|>"],
+    )
+)
 
 @register_conv_template_matching_function
 def match_internvl(model_path: str):
@@ -945,3 +959,8 @@ def match_openbmb_minicpm(model_path: str):
 def match_moonshot_kimivl(model_path: str):
     if re.search(r"kimi.*vl", model_path, re.IGNORECASE):
         return "kimi-vl"
+
+@register_conv_template_matching_function
+def match_sigma(model_path: str):
+    if re.search(r"sigma", model_path, re.IGNORECASE):
+        return "sigma"

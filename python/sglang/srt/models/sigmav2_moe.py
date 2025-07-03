@@ -74,7 +74,7 @@ def fused_topk_sigmoid(
         M, topk, dtype=torch.float32, device=hidden_states.device
     )
     topk_ids = torch.empty(M, topk, dtype=torch.int32, device=hidden_states.device)
-    topk_weights = F.sigmoid(gating_output.float(), dim=-1)
+    topk_weights = F.sigmoid(gating_output.float())
     topk_weights, topk_ids = torch.topk(topk_weights, topk, dim=-1)
     if renormalize:
         topk_weights = topk_weights / topk_weights.sum(dim=-1, keepdim=True)
