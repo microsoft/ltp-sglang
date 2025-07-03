@@ -7,5 +7,3 @@ RUN pip install sglang-router
 
 ARG SGLANG_SRC=./
 COPY ${SGLANG_SRC} /sgl-workspace/sglang
-
-CMD ["/bin/bash"]
