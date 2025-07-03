@@ -58,6 +58,28 @@ from sglang.srt.utils import add_prefix
 
 SigmaV2MoeConfig = None
 
+def fused_topk_sigmoid(
+    hidden_states: torch.Tensor,
+    gating_output: torch.Tensor,
+    topk: int,
+    renormalize: bool):
+    """
+    Fused top-k sigmoid operation for MoE selection. 
+    """
+    assert (
+        hidden_states.shape[0] == gating_output.shape[0]
+    ), f"Number of tokens mismatch, {hidden_states.shape=} vs {gating_output.shape=}"
+    M, _ = hidden_states.shape
+    topk_weights = torch.empty(
+        M, topk, dtype=torch.float32, device=hidden_states.device
+    )
+    topk_ids = torch.empty(M, topk, dtype=torch.int32, device=hidden_states.device)
+    topk_weights = F.sigmoid(gating_output.float(), dim=-1)
+    topk_weights, topk_ids = torch.topk(topk_weights, topk, dim=-1)
+    if renormalize:
+        topk_weights = topk_weights / topk_weights.sum(dim=-1, keepdim=True)
+    return topk_weights, topk_ids
+
 
 class SigmaV2MoeSparseMoeBlock(nn.Module):
     def __init__(
@@ -77,6 +99,11 @@ class SigmaV2MoeSparseMoeBlock(nn.Module):
 
         MoEImpl = EPMoE if global_server_args_dict["enable_ep_moe"] else FusedMoE
 
+        routing_func = None
+        # The default routing function is softmax, but we can also use sigmoid, which is the setting of the sigma v2 full model.
+        if getattr(config, "scoring_func", "softmax") == "sigmoid":
+            routing_func = fused_topk_sigmoid
+
         self.experts = MoEImpl(
             num_experts=config.n_routed_experts,
             top_k=config.num_experts_per_tok,
@@ -84,6 +111,7 @@ class SigmaV2MoeSparseMoeBlock(nn.Module):
             intermediate_size=config.moe_intermediate_size,
             renormalize=config.norm_topk_prob,
             quant_config=quant_config,
+            custom_routing_function=routing_func,
             prefix=add_prefix("experts", prefix),
         )
 
@@ -124,7 +152,7 @@ class SigmaV2MoeAttention(nn.Module):
         rms_norm_eps: float = 1e-06,
         attention_bias: bool = False,
         quant_config: Optional[QuantizationConfig] = None,
-        qk_layernorm: bool = False,
+        qk_layernorm: bool = True,
         prefix: str = "",
     ) -> None:
         super().__init__()
@@ -247,6 +275,7 @@ class SigmaV2MoeDecoderLayer(nn.Module):
             rms_norm_eps=rms_norm_eps,
             attention_bias=attention_bias,
             quant_config=quant_config,
+            qk_layernorm=config.qk_layernorm,
             prefix=add_prefix("self_attn", prefix),
         )
 
