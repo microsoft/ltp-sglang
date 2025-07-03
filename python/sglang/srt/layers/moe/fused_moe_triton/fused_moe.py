@@ -1032,6 +1032,8 @@ def try_get_optimal_moe_config(
 ):
     from sglang.srt.layers.moe.fused_moe_triton import get_config
 
+    # print("**************************************")
+    
     override_config = get_config()
     if override_config:
         config = override_config
@@ -1040,8 +1042,9 @@ def try_get_optimal_moe_config(
         E, _, N = w2_shape
         block_n = block_shape[0] if block_shape else 0
         block_k = block_shape[1] if block_shape else 0
+        
         configs = get_moe_configs(E, N, dtype, block_n, block_k)
-
+        # print(f"    E={E}, N={N}, M= dtype={dtype}, block_shape={block_shape}, configs={configs}")
         if configs:
             # If an optimal configuration map has been found, look up the
             # optimal config
@@ -1097,10 +1100,50 @@ def inplace_fused_experts(
     a2_scale: Optional[torch.Tensor] = None,
     block_shape: Optional[List[int]] = None,
 ) -> None:
+    # For Sigma-v2 full: 
+    # hidden_states.shape=torch.Size([6, 5120]), w1.shape=torch.Size([96, 540, 5120]), w2.shape=torch.Size([96, 5120, 270]), topk_weights.shape=torch.Size([6, 8]), topk_ids.shape=torch.Size([6, 8]), a1_scale=None, a2_scale=None, w1_scale=None, w2_scale=None, w1_zp=None, w2_zp=None
+    
+    E, N1_orig, K = w1.shape  # e.g. (96, 540, 5120)
+    E, K, N2_orig = w2.shape  # e.g. (96, 5120, 270)
+    
+    # Target shapes (padded to be divisible by 64/32)
+    N1_padded = ((N1_orig + 63) // 64) * 64  # Round up to multiple of 64 (e.g. 576)
+    N2_padded = ((N2_orig + 31) // 32) * 32  # Round up to multiple of 32 (e.g. 288)
+    
+    # Create padded weight tensors
+    w1_padded = torch.zeros((E, N1_padded, K), 
+                           dtype=w1.dtype, 
+                           device=w1.device)
+    w2_padded = torch.zeros((E, K, N2_padded), 
+                           dtype=w2.dtype, 
+                           device=w2.device)
+    
+    # Copy original weights
+    w1_padded[:, :N1_orig, :] = w1
+    w2_padded[:, :, :N2_orig] = w2
+    
+    # Handle scales if quantized
+    w1_scale_padded = w1_scale
+    w2_scale_padded = w2_scale
+    
+    if w1_scale is not None and w1_scale.ndim >= 2:
+        if w1_scale.shape[-2] == N1_orig:
+            w1_scale_padded = torch.zeros((*w1_scale.shape[:-2], N1_padded, w1_scale.shape[-1]), 
+                                         dtype=w1_scale.dtype, 
+                                         device=w1_scale.device)
+            w1_scale_padded[..., :N1_orig, :] = w1_scale
+    
+    if w2_scale is not None and w2_scale.ndim >= 2:
+        if w2_scale.shape[-1] == N2_orig:
+            w2_scale_padded = torch.zeros((*w2_scale.shape[:-1], N2_padded), 
+                                         dtype=w2_scale.dtype, 
+                                         device=w2_scale.device)
+            w2_scale_padded[..., :N2_orig] = w2_scale
+    
     fused_experts_impl(
         hidden_states,
-        w1,
-        w2,
+        w1_padded,
+        w2_padded,
         topk_weights,
         topk_ids,
         True,
@@ -1111,8 +1154,8 @@ def inplace_fused_experts(
         use_int8_w8a16,
         use_int4_w4a16,
         per_channel_quant,
-        w1_scale,
-        w2_scale,
+        w1_scale_padded,
+        w2_scale_padded,
         w1_zp,
         w2_zp,
         a1_scale,

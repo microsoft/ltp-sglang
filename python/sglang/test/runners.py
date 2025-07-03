@@ -55,6 +55,8 @@ def get_dtype_str(torch_dtype):
         return "float16"
     if torch_dtype is torch.float32:
         return "float32"
+    if torch_dtype is torch.bfloat16:
+        return "bfloat16"
     else:
         raise NotImplementedError()
 
@@ -215,7 +217,10 @@ class HFRunner:
         if self.model_type == "generation":
             config = AutoConfig.from_pretrained(model_path)
             if model_archs := getattr(config, "architectures"):
-                model_cls = getattr(transformers, model_archs[0])
+                try:
+                    model_cls = getattr(transformers, model_archs[0])
+                except AttributeError:
+                    model_cls = AutoModelForCausalLM
             else:
                 model_cls = AutoModelForCausalLM
             self.base_model = model_cls.from_pretrained(
@@ -223,6 +228,7 @@ class HFRunner:
                 torch_dtype=torch_dtype,
                 trust_remote_code=self.trust_remote_code,
                 low_cpu_mem_usage=True,
+                device_map="auto",
             ).cuda()
         elif self.model_type == "embedding":
             if "gme-qwen2-vl" in model_path.lower():
