@@ -1032,8 +1032,6 @@ def try_get_optimal_moe_config(
 ):
     from sglang.srt.layers.moe.fused_moe_triton import get_config
 
-    # print("**************************************")
-    
     override_config = get_config()
     if override_config:
         config = override_config
@@ -1041,10 +1039,9 @@ def try_get_optimal_moe_config(
         # First try to load optimal config from the file
         E, _, N = w2_shape
         block_n = block_shape[0] if block_shape else 0
-        block_k = block_shape[1] if block_shape else 0
-        
+        block_k = block_shape[1] if block_shape else 0        
         configs = get_moe_configs(E, N, dtype, block_n, block_k)
-        # print(f"    E={E}, N={N}, M= dtype={dtype}, block_shape={block_shape}, configs={configs}")
+
         if configs:
             # If an optimal configuration map has been found, look up the
             # optimal config
