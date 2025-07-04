@@ -13,6 +13,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
+# Revision Note: This file is adapted from the Qwen3 MoE model implementation.
+# The following is the revision history:
+# - Use `config.n_routed_experts`` instead of `config.num_experts`: Line:100/103/114/126/392
+# - Remove the support of `mlp_only_layers` due to all layers being MoE layers in SigmaV2: Line:288
+# - Support the configuration of qk_layernorm (true or false) : Line:161/185/245-247/284
+# - Support expert selection using sigmoid and the configuration of scoring_func: Line:108-111/120
+# - Implemented a fused top-k sigmoid function for MoE selection : Line:67-87
 
 
 """Inference-only SigmaV2MoE model compatible with HuggingFace weights."""
@@ -52,7 +59,6 @@ from sglang.srt.layers.vocab_parallel_embedding import (
 from sglang.srt.managers.schedule_batch import global_server_args_dict
 from sglang.srt.model_executor.forward_batch_info import ForwardBatch
 from sglang.srt.model_loader.weight_utils import default_weight_loader
-from sglang.srt.models.qwen2_moe import Qwen2MoeMLP as SigmaV2MoeMLP
 from sglang.srt.models.qwen2_moe import Qwen2MoeModel
 from sglang.srt.utils import add_prefix
 
