@@ -1039,7 +1039,7 @@ def try_get_optimal_moe_config(
         # First try to load optimal config from the file
         E, _, N = w2_shape
         block_n = block_shape[0] if block_shape else 0
-        block_k = block_shape[1] if block_shape else 0        
+        block_k = block_shape[1] if block_shape else 0
         configs = get_moe_configs(E, N, dtype, block_n, block_k)
 
         if configs:
@@ -1097,50 +1097,60 @@ def inplace_fused_experts(
     a2_scale: Optional[torch.Tensor] = None,
     block_shape: Optional[List[int]] = None,
 ) -> None:
-    # For Sigma-v2 full: 
-    # hidden_states.shape=torch.Size([6, 5120]), w1.shape=torch.Size([96, 540, 5120]), w2.shape=torch.Size([96, 5120, 270]), topk_weights.shape=torch.Size([6, 8]), topk_ids.shape=torch.Size([6, 8]), a1_scale=None, a2_scale=None, w1_scale=None, w2_scale=None, w1_zp=None, w2_zp=None
-    
-    E, N1_orig, K = w1.shape  # e.g. (96, 540, 5120)
-    E, K, N2_orig = w2.shape  # e.g. (96, 5120, 270)
-    
-    # Target shapes (padded to be divisible by 64/32)
-    N1_padded = ((N1_orig + 63) // 64) * 64  # Round up to multiple of 64 (e.g. 576)
-    N2_padded = ((N2_orig + 31) // 32) * 32  # Round up to multiple of 32 (e.g. 288)
-    
-    # Create padded weight tensors
-    w1_padded = torch.zeros((E, N1_padded, K), 
-                           dtype=w1.dtype, 
-                           device=w1.device)
-    w2_padded = torch.zeros((E, K, N2_padded), 
-                           dtype=w2.dtype, 
-                           device=w2.device)
-    
-    # Copy original weights
-    w1_padded[:, :N1_orig, :] = w1
-    w2_padded[:, :, :N2_orig] = w2
-    
-    # Handle scales if quantized
-    w1_scale_padded = w1_scale
-    w2_scale_padded = w2_scale
-    
-    if w1_scale is not None and w1_scale.ndim >= 2:
-        if w1_scale.shape[-2] == N1_orig:
-            w1_scale_padded = torch.zeros((*w1_scale.shape[:-2], N1_padded, w1_scale.shape[-1]), 
-                                         dtype=w1_scale.dtype, 
-                                         device=w1_scale.device)
-            w1_scale_padded[..., :N1_orig, :] = w1_scale
-    
-    if w2_scale is not None and w2_scale.ndim >= 2:
-        if w2_scale.shape[-1] == N2_orig:
-            w2_scale_padded = torch.zeros((*w2_scale.shape[:-1], N2_padded), 
-                                         dtype=w2_scale.dtype, 
-                                         device=w2_scale.device)
-            w2_scale_padded[..., :N2_orig] = w2_scale
-    
+    if _is_cuda:
+        # To fix the misalignment issue on CUDA, Pad the input tensors to 16-multiple dimensions
+        # Get shapes
+        E, N1_orig, K = w1.shape
+        E, K, N2_orig = w2.shape
+        # Calculate padded dimensions
+        N2_padded = ((N2_orig + 15) // 16) * 16
+        N1_padded = N2_padded * 2
+        assert N1_padded >= N1_orig, "N1_padded must be greater than or equal to N1_orig"
+
+        # Only pad if needed
+        if N1_padded != N1_orig:
+            w1_padded = torch.zeros((E, N1_padded, K), dtype=w1.dtype, device=w1.device)
+            w1_padded[:, :N1_orig, :] = w1
+            w1 = w1_padded
+
+            # Pad w1_scale if it exists and matches the dimension
+            if w1_scale is not None and w1_scale.ndim >= 2 and w1_scale.shape[-2] == N1_orig:
+                w1_scale_padded = torch.zeros((*w1_scale.shape[:-2], N1_padded, w1_scale.shape[-1]), 
+                                            dtype=w1_scale.dtype, device=w1_scale.device)
+                w1_scale_padded[..., :N1_orig, :] = w1_scale
+                w1_scale = w1_scale_padded
+
+            # Pad w1_zp if it exists and matches the dimension
+            if w1_zp is not None and w1_zp.ndim >= 2 and w1_zp.shape[-2] == N1_orig:
+                w1_zp_padded = torch.zeros((*w1_zp.shape[:-2], N1_padded, w1_zp.shape[-1]), 
+                                         dtype=w1_zp.dtype, device=w1_zp.device)
+                w1_zp_padded[..., :N1_orig, :] = w1_zp
+                w1_zp = w1_zp_padded
+
+        # Pad w2 if needed
+        if N2_padded != N2_orig:
+            w2_padded = torch.zeros((E, K, N2_padded), dtype=w2.dtype, device=w2.device)
+            w2_padded[:, :, :N2_orig] = w2
+            w2 = w2_padded
+
+            # Pad w2_scale if it exists and matches the dimension
+            if w2_scale is not None and w2_scale.ndim >= 2 and w2_scale.shape[-1] == N2_orig:
+                w2_scale_padded = torch.zeros((*w2_scale.shape[:-1], N2_padded), 
+                                            dtype=w2_scale.dtype, device=w2_scale.device)
+                w2_scale_padded[..., :N2_orig] = w2_scale
+                w2_scale = w2_scale_padded
+
+            # Pad w2_zp if it exists and matches the dimension
+            if w2_zp is not None and w2_zp.ndim >= 2 and w2_zp.shape[-1] == N2_orig:
+                w2_zp_padded = torch.zeros((*w2_zp.shape[:-1], N2_padded), 
+                                         dtype=w2_zp.dtype, device=w2_zp.device)
+                w2_zp_padded[..., :N2_orig] = w2_zp
+                w2_zp = w2_zp_padded
+
     fused_experts_impl(
         hidden_states,
-        w1_padded,
-        w2_padded,
+        w1,
+        w2,
         topk_weights,
         topk_ids,
         True,
@@ -1151,8 +1161,8 @@ def inplace_fused_experts(
         use_int8_w8a16,
         use_int4_w4a16,
         per_channel_quant,
-        w1_scale_padded,
-        w2_scale_padded,
+        w1_scale,
+        w2_scale,
         w1_zp,
         w2_zp,
         a1_scale,

@@ -13,13 +13,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
+# 
 # Revision Note: This file is adapted from the Qwen3 MoE model implementation.
 # The following is the revision history:
-# - Use `config.n_routed_experts`` instead of `config.num_experts`: Line:100/103/114/126/392
-# - Remove the support of `mlp_only_layers` due to all layers being MoE layers in SigmaV2: Line:288
-# - Support the configuration of qk_layernorm (true or false) : Line:161/185/245-247/284
-# - Support expert selection using sigmoid and the configuration of scoring_func: Line:108-111/120
-# - Implemented a fused top-k sigmoid function for MoE selection : Line:67-87
+# - Use `config.n_routed_experts`` instead of `config.num_experts`: Line:102/105/116/128/430
+# - Remove the support of `mlp_only_layers` due to all layers being MoE layers in SigmaV2: Line:290
+# - Support the configuration of qk_layernorm (true or false) : Line:163/187/247-249/286
+# - Support expert selection using sigmoid and the configuration of scoring_func: Line:110-113/122
+# - Implemented a fused top-k sigmoid function for MoE selection : Line:69-89
 
 
 """Inference-only SigmaV2MoE model compatible with HuggingFace weights."""
@@ -56,13 +57,14 @@ from sglang.srt.layers.vocab_parallel_embedding import (
     ParallelLMHead,
     VocabParallelEmbedding,
 )
+from sglang.srt.managers.expert_distribution import ExpertDistributionRecorder
 from sglang.srt.managers.schedule_batch import global_server_args_dict
 from sglang.srt.model_executor.forward_batch_info import ForwardBatch
 from sglang.srt.model_loader.weight_utils import default_weight_loader
-from sglang.srt.models.qwen2_moe import Qwen2MoeModel
-from sglang.srt.utils import add_prefix
+from sglang.srt.utils import add_prefix, make_layers
 
 SigmaV2MoeConfig = None
+expert_distribution_recorder = ExpertDistributionRecorder()
 
 def fused_topk_sigmoid(
     hidden_states: torch.Tensor,
@@ -321,19 +323,55 @@ class SigmaV2MoeDecoderLayer(nn.Module):
         return hidden_states, residual
 
 
-class SigmaV2MoeModel(Qwen2MoeModel):
+class SigmaV2MoeModel(nn.Module):
     def __init__(
         self,
         config: SigmaV2MoeConfig,
         quant_config: Optional[QuantizationConfig] = None,
         prefix: str = "",
     ) -> None:
-        super().__init__(
-            config=config,
-            quant_config=quant_config,
-            prefix=prefix,
-            decoder_layer_type=SigmaV2MoeDecoderLayer,
+        super().__init__()
+        self.padding_idx = config.pad_token_id
+        self.vocab_size = config.vocab_size
+
+        self.embed_tokens = VocabParallelEmbedding(
+            config.vocab_size,
+            config.hidden_size,
+            prefix=add_prefix("embed_tokens", prefix),
         )
+
+        self.layers = make_layers(
+            config.num_hidden_layers,
+            lambda idx, prefix: SigmaV2MoeDecoderLayer(
+                layer_id=idx,
+                config=config,
+                quant_config=quant_config,
+                prefix=prefix,
+            ),
+            prefix=add_prefix("layers", prefix),
+        )
+        self.norm = RMSNorm(config.hidden_size, eps=config.rms_norm_eps)
+
+    def forward(
+        self,
+        input_ids: torch.Tensor,
+        positions: torch.Tensor,
+        forward_batch: ForwardBatch,
+        input_embeds: torch.Tensor = None,
+    ) -> torch.Tensor:
+        if input_embeds is None:
+            hidden_states = self.embed_tokens(input_ids)
+        else:
+            hidden_states = input_embeds
+        residual = None
+        for i in range(len(self.layers)):
+            expert_distribution_recorder.set_current_layer(i)
+            layer = self.layers[i]
+            hidden_states, residual = layer(
+                positions, hidden_states, forward_batch, residual
+            )
+        hidden_states, _ = self.norm(hidden_states, residual)
+        return hidden_states
 
 
 class SigmaV2MoeForCausalLM(nn.Module):
