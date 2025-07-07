@@ -28,9 +28,7 @@ if [ "$device" == "cuda" ]; then
     docker run -it \
         --name sigma-sglang \
         --gpus all \
-        -p 30000:30000 \
         --ipc=host \
-        --network=host \
         --privileged \
         -v $model_path:/app/sigma \
         $image \
@@ -40,9 +38,7 @@ elif [ "$device" == "rocm" ]; then
     docker run -it --rm \
         --name sigma-sglang \
         --ipc=host \
-        --network=host \
         --privileged \
-        -p 30000:30000 \
         --cap-add=CAP_SYS_ADMIN \
         --device=/dev/kfd \
         --device=/dev/dri \
