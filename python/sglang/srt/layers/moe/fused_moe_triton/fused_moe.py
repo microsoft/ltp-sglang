@@ -1097,6 +1097,75 @@ def inplace_fused_experts(
     a2_scale: Optional[torch.Tensor] = None,
     block_shape: Optional[List[int]] = None,
 ) -> None:
+    if _is_cuda:
+        # To fix the misalignment issue on CUDA, Pad the input tensors to 16-multiple dimensions
+        # Get shapes
+        E, N1_orig, K = w1.shape
+        E, K, N2_orig = w2.shape
+        # Calculate padded dimensions
+        N1_padded = ((N1_orig + 15) // 16) * 16
+        N2_padded = ((N2_orig + 15) // 16) * 16
+
+        # Only pad if needed
+        if N1_padded != N1_orig:
+            w1_padded = torch.zeros((E, N1_padded, K), dtype=w1.dtype, device=w1.device)
+            w1_padded[:, :N1_orig, :] = w1
+            w1 = w1_padded
+
+            # Pad w1_scale if it exists and matches the dimension
+            if (
+                w1_scale is not None
+                and w1_scale.ndim >= 2
+                and w1_scale.shape[-2] == N1_orig
+            ):
+                w1_scale_padded = torch.zeros(
+                    (*w1_scale.shape[:-2], N1_padded, w1_scale.shape[-1]),
+                    dtype=w1_scale.dtype,
+                    device=w1_scale.device,
+                )
+                w1_scale_padded[..., :N1_orig, :] = w1_scale
+                w1_scale = w1_scale_padded
+
+            # Pad w1_zp if it exists and matches the dimension
+            if w1_zp is not None and w1_zp.ndim >= 2 and w1_zp.shape[-2] == N1_orig:
+                w1_zp_padded = torch.zeros(
+                    (*w1_zp.shape[:-2], N1_padded, w1_zp.shape[-1]),
+                    dtype=w1_zp.dtype,
+                    device=w1_zp.device,
+                )
+                w1_zp_padded[..., :N1_orig, :] = w1_zp
+                w1_zp = w1_zp_padded
+
+        # Pad w2 if needed
+        if N2_padded != N2_orig:
+            w2_padded = torch.zeros((E, K, N2_padded), dtype=w2.dtype, device=w2.device)
+            w2_padded[:, :, :N2_orig] = w2
+            w2 = w2_padded
+
+            # Pad w2_scale if it exists and matches the dimension
+            if (
+                w2_scale is not None
+                and w2_scale.ndim >= 2
+                and w2_scale.shape[-1] == N2_orig
+            ):
+                w2_scale_padded = torch.zeros(
+                    (*w2_scale.shape[:-1], N2_padded),
+                    dtype=w2_scale.dtype,
+                    device=w2_scale.device,
+                )
+                w2_scale_padded[..., :N2_orig] = w2_scale
+                w2_scale = w2_scale_padded
+
+            # Pad w2_zp if it exists and matches the dimension
+            if w2_zp is not None and w2_zp.ndim >= 2 and w2_zp.shape[-1] == N2_orig:
+                w2_zp_padded = torch.zeros(
+                    (*w2_zp.shape[:-1], N2_padded),
+                    dtype=w2_zp.dtype,
+                    device=w2_zp.device,
+                )
+                w2_zp_padded[..., :N2_orig] = w2_zp
+                w2_zp = w2_zp_padded
+
     fused_experts_impl(
         hidden_states,
         w1,
