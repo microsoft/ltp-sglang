@@ -11,7 +11,6 @@ script_dir=$(dirname "$0")
 # Set the project directory to two levels up from the script directory
 project_dir="$script_dir/../.."
 
-
 # Build the CUDA-based Docker image
 docker build \
     --build-arg BASE_IMAGE=lmsysorg/sglang:v0.4.6.post4-cu124 \

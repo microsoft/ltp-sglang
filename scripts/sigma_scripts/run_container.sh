@@ -1,42 +1,34 @@
-#!/bin/bash  
-   
+#!/bin/bash
+
 model_path=$1
-device=$2
-# Check if model path argument is provided  
+model_name=$2
+device=$3
+image=$4
+# Check if model path argument is provided
 # Check if device argument is provided. It should be `cuda` or `rocm`.
-if [ -z "$model_path" ] || [ -z "$device" ] || ([ "$device" != "cuda" ] && [ "$device" != "rocm" ]); then
-    echo "Usage: $0 <model_path> <device> <image>"
-    echo "Example: $0 /path/to/model cuda"
+if [ -z "$model_path" ] || [ -z "$model_name" ] || [ -z "$device" ] || ([ "$device" != "cuda" ] && [ "$device" != "rocm" ]); then
+    echo "Usage: $0 <model_path> <model_name> <device> <image>"
+    echo "Example: $0 /path/to/model your_model_name cuda"
     echo "Supported devices: cuda, rocm"
     echo "Note: Ensure the model path is accessible and the device is correctly specified."
     exit 1
 fi
 
-# Set image to the third argument or default to the specified image
-image=$3
-if [ -z "$image" ]; then
-    if [ "$device" == "cuda" ]; then
-        image="sigmainference.azurecr.io/sglang/sglang-inference-cuda:latest"
-    elif [ "$device" == "rocm" ]; then
-        image="sigmainference.azurecr.io/sglang/sglang-inference-rocm:latest"
-    fi
-fi
-
 # Run the Docker container based on the specified device
 if [ "$device" == "cuda" ]; then
-    echo "Running CUDA container with image: $image"    
+    echo "Running CUDA container with image: $image"
     docker run -it \
-        --name sigma-sglang \
+        --name ltp-sglang \
         --gpus all \
         --ipc=host \
         --privileged \
-        -v $model_path:/app/sigma \
+        -v $model_path:/app/$model_name \
         $image \
         bash
 elif [ "$device" == "rocm" ]; then
     echo "Running ROCm container with image: $image"
     docker run -it --rm \
-        --name sigma-sglang \
+        --name ltp-sglang \
         --ipc=host \
         --privileged \
         --cap-add=CAP_SYS_ADMIN \
@@ -46,7 +38,7 @@ elif [ "$device" == "rocm" ]; then
         --group-add render \
         --cap-add=SYS_PTRACE \
         --security-opt seccomp=unconfined \
-        -v $model_path:/app/sigma \
+        -v $model_path:/app/$model_name \
         $image \
         bash
 else
