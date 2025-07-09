@@ -56,4 +56,4 @@ jobs:
           no-cache: true
           build-args: |
             BASE_IMAGE: ${{ matrix.base-image }}
-            SGLANG_SRC： ./
+            SGLANG_SRC: ./
