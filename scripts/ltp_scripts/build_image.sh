@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# This script builds Docker images for the Sigma inference environment.
+# This script builds Docker images for the LTP inference environment.
 # Usage: ./build_image.sh [tag]
 
 # Check if a tag argument is provided; if not, default to "latest"
@@ -10,7 +10,6 @@ tag=${1:-latest}
 script_dir=$(dirname "$0")
 # Set the project directory to two levels up from the script directory
 project_dir="$script_dir/../.."
-
 
 # Build the CUDA-based Docker image
 docker build \
