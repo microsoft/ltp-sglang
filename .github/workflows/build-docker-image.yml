@@ -1,0 +1,59 @@
+name: build-ltp-docker-image
+
+on:
+  push:
+    branches:
+    - main
+    - release/*
+  pull_request:
+    branches:
+    - main
+    - release/*
+  release:
+    types:
+    - published
+
+jobs:
+  build-docker-image:
+    name: Build ${{ matrix.name }}
+    runs-on: build-docker-image
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+        - name: cuda
+          base-image: 'lmsysorg/sglang:v0.4.6.post4-cu124'
+          platforms: linux/amd64
+          runtime: cuda
+        - name: rocm
+          base-image: 'rocm/sgl-dev:20250518-srt'
+          platforms: linux/amd64
+          runtime: rocm
+    steps:
+      - name: Checkout target branch
+        uses: actions/checkout@v4
+      - name: Clean build cache and image cache
+        run: |
+          docker builder prune --all --force
+          docker image prune --force
+      - name: Login to ACR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.AZURE_CR_URI }}
+          username: ${{ secrets.DOCKER_LOGIN_USERNAME }}
+          password: ${{ secrets.DOCKER_LOGIN_PASSWORD }}
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          platforms: ${{ matrix.platforms }}
+          context: .
+          file: scripts/ltp_scripts/dev.${{ matrix.name }}.dockerfile
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: "${{ secrets.AZURE_CR_URI }}/sglang/sglang-inference-${{ matrix.name }}"
+          no-cache: true
+          build-args: |
+            BASE_IMAGE: ${{ matrix.base-image }}
+            SGLANG_SRC： ./
