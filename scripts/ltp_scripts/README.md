@@ -1,4 +1,4 @@
-# Model Inference Support for LTP
+# Model Inference Support for [LTP](https://github.com/microsoft/ltp-megatron-lm)
 
 ## How to Build and Run the LTP Inference Docker Container
 
@@ -22,7 +22,7 @@
 3. **Push the Docker Image if needed**
    Ensure you have the necessary permissions to push the image to the Docker registry. Use the following command:
    ```bash
-   ./push_image.sh <device> <tag> <registry> # where `<device>` can be `cuda` or `rocm`, and `<tag>` is the tag you want to assign to the image whose default value is `latest`.
+   ./push_image.sh <device> <registry> <tag> # where `<device>` can be `cuda` or `rocm`, and `<tag>` is the tag you want to assign to the image whose default value is `latest`.
    ```
 
 ## Additional Notes

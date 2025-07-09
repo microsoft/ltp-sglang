@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# This script builds Docker images for the Sigma inference environment.
+# This script builds Docker images for the LTP inference environment.
 # Usage: ./build_image.sh [tag]
 
 # Check if a tag argument is provided; if not, default to "latest"

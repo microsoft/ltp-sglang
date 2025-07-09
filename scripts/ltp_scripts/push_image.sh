@@ -2,8 +2,10 @@
 
 # Check if device argument is provided
 device=$1
-if [ -z "$device" ]; then
-    echo "Usage: $0 <device> <tag> <registry_url>"
+# Define the registry
+registry=$2
+if [ -z "$device" ] || [ -z "$registry" ]; then
+    echo "Usage: $0 <device> <registry_url> <tag>"
     echo "Device options: cuda, rocm"
     exit 1
 fi
@@ -15,10 +17,7 @@ if [[ "$device" != "cuda" && "$device" != "rocm" ]]; then
 fi
 
 # Check if tag argument is provided; if not, default to "latest"
-tag=${2:-"latest"}
-
-# Define the registry
-registry=${3:-"sigmainference.azurecr.io/sglang"}
+tag=${3:-"latest"}
 
 # Tag and push the Docker image
 docker tag "sglang-inference-$device:$tag" "$registry/sglang-inference-$device:$tag"
