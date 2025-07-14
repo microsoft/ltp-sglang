@@ -1,0 +1,14 @@
+dist_init_addr: 10.0.0.10:30000
+nnodes: 1
+node_rank: 0
+
+tensor_parallel_size: 16
+enable_dp_attention: false
+data_parallel_size: 16
+enable_ep_moe: true
+enable_deepep_moe: true
+expert_parallel_size: 16
+
+bszs: [4,8,16,32]
+seq_lens: [1,2,4,8,16,32,64,128,256,512,1024,2048]
+max_tokens_generated: 2

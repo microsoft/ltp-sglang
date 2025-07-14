@@ -1,0 +1,8 @@
+{
+    "num_experts": 256,
+    "top_k": 8,
+    "hidden_size": 7168,
+    "intermediate_size": 2048,
+    "topk_group": 4,
+    "num_expert_group": 8
+}

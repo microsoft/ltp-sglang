@@ -1,0 +1,27 @@
+defaults:
+  - _self_
+  - run: multi_gpu
+  - override hydra/hydra_logging: disabled  
+  - override hydra/job_logging: disabled  
+  
+model: ./model_conf/grok
+chunked_prefill_size: 1048576
+max_prefill_tokens: 1048576
+
+attention_backend: fa3 
+disable_custom_all_reduce: false
+disable_radix_cache: true
+disable_cuda_graph: false
+disable_overlap_schedule: true
+
+trust_remote_code: true
+log_level: error 
+load_format: dummy
+
+enable_profile: false 
+profile_phase: decode 
+
+hydra:  
+  output_subdir: null  
+  run:  
+    dir: .
