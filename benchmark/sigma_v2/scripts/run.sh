@@ -93,9 +93,6 @@ model_configs="conf/default.yaml"
 bsz_seq="scripts/bsz_seq.csv"
 mkdir -p log
 profile_folder="${model}_profile_${gpuclock}/nsys_report"
-if [ "$profile" = "true" ]; then
-    mkdir -p "$profile_folder"
-fi
 IFS=$';'
 
 declare -A mconfigs=(
@@ -129,63 +126,86 @@ update_config() {
     fi
 }
 
+run_params=(
+    disable_cuda_graph="$wocg"
+    model="./model_conf/$model"
+    run=$conf_run
+    run.dist_init_addr="$ip:30000"
+    run.nnodes="$nnodes"
+    run.node_rank="$rank"
+    run.tensor_parallel_size="$tp"
+    run.enable_ep_moe="$enable_ep"
+    run.expert_parallel_size="$ep"
+    run.enable_dp_attention="$enable_dp"
+    run.data_parallel_size="$dp"
+    run.enable_deepep_moe="$deepep"
+)
+
 run_benchmark() {
     local enable_profile=$1
     local profile_phase=$2
-    local bsz=$3
-    local seq_len=$4
+    local bsz=$3  # Default to 0 if not provided
+    local seq_len=$4  # Default to 0 if not provided
+    
     if [ -f "$model_configs" ]; then
-        sed -i "s/enable_profile: .*/enable_profile: $enable_profile /" "$model_configs" && echo "Start profile=$enable_profile"
+        sed -i "s/enable_profile: .*/enable_profile: $enable_profile /" "$model_configs" || {
+            echo "Error: Failed to update profile setting in $model_configs"
+            return 1
+        }
     else
         echo "Error: Configuration file $model_configs not found."
-        exit 1
+        return 1
     fi
+    
     if [ "$profile" = "true" ]; then
-        sed -i "s/profile_phase: .*/profile_phase: $profile_phase /" "$model_configs" && echo "Start profile $profile_phase phase"
+        # Update profile phase configuration
+        sed -i "s/profile_phase: .*/profile_phase: $profile_phase /" "$model_configs" || {
+            echo "Error: Failed to update profile phase in $model_configs"
+            return 1
+        }
+        
+        # Determine profile subfolder
         if [ "$profile_phase" = "prefill" ]; then
             sub_profile_folder="${profile_phase}_profile"
         else
-            if [ $wocg = "true" ]; then
+            if [ "$wocg" = "true" ]; then
                 sub_profile_folder="${profile_phase}_profile_wo_graph"
             else
                 sub_profile_folder="${profile_phase}_profile_w_graph"
             fi
         fi
+        
+        # Create profile directory and set filename
+        mkdir -p "$profile_folder"
         mkdir -p "${profile_folder}/${sub_profile_folder}"
         profile_filename="${profile_folder}/${sub_profile_folder}/profile_${profile_phase}_bsz_${bsz}_seq_${seq_len}_config_${mconf}"
+        
+        # Run with nsys profiling if file doesn't exist
         if [ -f "${profile_filename}.sqlite" ]; then
             echo "Profile already exists: ${profile_filename}.sqlite. Skipping nsys capture."
         else
-            SGL_ENABLE_JIT_DEEPGEMM=1 nsys profile -t nvtx,cuda --capture-range=cudaProfilerApi --cuda-graph-trace node -o "$profile_filename" --export sqlite --force-overwrite true --cuda-memory-usage true \
-                python3 "$run_script" \
-                disable_cuda_graph="$wocg" \
-                model="./model_conf/$model" \
-                run=$conf_run \
-                run.dist_init_addr="$ip:30000" \
-                run.nnodes="$nnodes" \
-                run.node_rank="$rank" \
-                run.tensor_parallel_size="$tp" \
-                run.enable_ep_moe="$enable_ep" \
-                run.expert_parallel_size="$ep" \
-                run.enable_dp_attention="$enable_dp" \
-                run.data_parallel_size="$dp" \
-                run.enable_deepep_moe="$deepep"
+            echo "Running profiling for phase: $profile_phase"
+            SGL_ENABLE_JIT_DEEPGEMM=1 nsys profile \
+                -t nvtx,cuda \
+                --capture-range=cudaProfilerApi \
+                --cuda-graph-trace node \
+                -o "$profile_filename" \
+                --export sqlite \
+                --force-overwrite true \
+                --cuda-memory-usage true \
+                python3 "$run_script" "${run_params[@]}" || {
+                    echo "Error: Profiling run failed"
+                    return 1
+                }
         fi
     else
-        SGL_ENABLE_JIT_DEEPGEMM=1 python3 "$run_script" \
-            disable_cuda_graph="$wocg" \
-            model="./model_conf/$model" \
-            run=$conf_run \
-            run.dist_init_addr="$ip:30000" \
-            run.nnodes="$nnodes" \
-            run.node_rank="$rank" \
-            run.tensor_parallel_size="$tp" \
-            run.enable_ep_moe="$enable_ep" \
-            run.expert_parallel_size="$ep" \
-            run.enable_dp_attention="$enable_dp" \
-            run.data_parallel_size="$dp" \
-            run.enable_deepep_moe="$deepep"
+        echo "Running benchmark without profiling"
+        SGL_ENABLE_JIT_DEEPGEMM=1 python3 "$run_script" "${run_params[@]}" || {
+            echo "Error: Benchmark run failed"
+            return 1
+        }
     fi
+    return 0
 }
 
 nvidia-smi -lgc "$gpuclock" || {
@@ -193,26 +213,35 @@ nvidia-smi -lgc "$gpuclock" || {
     exit 1
 } 
 
+cleanup() {
+    echo "Cleaning up processes..."
+    pkill -f sglang || true
+    pkill -f "python.*$run_script" || true
+    sleep 5
+    # Force kill any remaining processes
+    pkill -f -9 sglang 2>/dev/null || true
+    pkill -f -9 "python.*$run_script" 2>/dev/null || true
+    pkill -f -9 nsys 2>/dev/null || true
+    sleep 3
+}
+
 while read -r bszs seq_lens; do
+    echo "Running with batch sizes: $bszs, sequence lengths: $seq_lens"
     update_config "bszs" "$bszs"
     update_config "seq_lens" "$seq_lens"
 
-    if [ -f "$run_script" ]; then
-        if [ "$profile" = "true" ]; then
-            run_benchmark "true" "prefill" "$bszs" "$seq_lens"
-            sleep 10 # seems to cause error when too frequent nsys is launched
-            pkill -f -9 python
-            pkill -f -9 nsys
-            sleep 10
-            run_benchmark "true" "decode" "$bszs" "$seq_lens"
-            sleep 10
-            pkill -f -9 python
-            pkill -f -9 nsys
-        else
-            run_benchmark "false" ""
-        fi
-    else
+    if [ ! -f "$run_script" ]; then
         echo "Error: Benchmark script $run_script not found."
         exit 1
+    fi
+
+    if [ "$profile" = "true" ]; then
+        run_benchmark "true" "prefill" "$bszs" "$seq_lens"
+        cleanup
+        run_benchmark "true" "decode" "$bszs" "$seq_lens"
+        cleanup
+    else
+        echo "=== Running benchmark without profiling ==="
+        run_benchmark "false" "" "$bszs" "$seq_lens"
     fi
 done < "$bsz_seq"

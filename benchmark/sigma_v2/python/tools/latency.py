@@ -1,9 +1,8 @@
 import pandas as pd
-from constant import LOG_DIR, model_hardware, CSV_DIR
-from flop import get_model_flops
-from fig import plot_per_model_mfu
 import os
 import glob
+from constant import LOG_DIR, CSV_DIR, model_hardware
+from flop import get_model_flops
 
 def extract_latency(log_file):
     """
