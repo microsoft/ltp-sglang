@@ -2,7 +2,6 @@ outputs
 multirun
 *.out
 *.pdf
-*.csv
 results
 log
 config.json

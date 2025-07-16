@@ -9,6 +9,6 @@ enable_ep_moe: true
 enable_deepep_moe: true
 expert_parallel_size: 16
 
-bszs: [1]
-seq_lens: [1024]
+bszs: [8]
+seq_lens: [1,2,4,8,16,32,64,128,256,512,1024]
 max_tokens_generated: 2

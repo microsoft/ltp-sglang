@@ -241,7 +241,6 @@ while read -r bszs seq_lens; do
         run_benchmark "true" "decode" "$bszs" "$seq_lens"
         cleanup
     else
-        echo "=== Running benchmark without profiling ==="
         run_benchmark "false" "" "$bszs" "$seq_lens"
     fi
 done < "$bsz_seq"
