@@ -226,8 +226,8 @@ def _run_subprocess(
             )
 
             check_close_model_outputs(
-                hf_outputs=hf_outputs,
-                srt_outputs=srt_outputs,
+                output1=hf_outputs,
+                output2=srt_outputs,
                 prefill_tolerance=prefill_tolerance,
                 decode_tolerance=decode_tolerance,
                 rouge_l_tolerance=1,

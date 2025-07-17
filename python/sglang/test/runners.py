@@ -18,6 +18,7 @@ from dataclasses import dataclass
 from typing import List, Optional, Tuple, Union
 
 import torch
+import torch.distributed as dist
 import torch.nn.functional as F
 import transformers
 from transformers import (
@@ -55,6 +56,8 @@ def get_dtype_str(torch_dtype):
         return "float16"
     if torch_dtype is torch.float32:
         return "float32"
+    if torch_dtype is torch.bfloat16:
+        return "bfloat16"
     else:
         raise NotImplementedError()
 
@@ -115,11 +118,13 @@ class HFRunner:
         self,
         model_path: str,
         torch_dtype: torch.dtype,
+        tp_size: int = 1,
         model_type: str = "generation",
         output_str_only: bool = False,
         trust_remote_code: bool = False,
     ):
         self.model_type = model_type
+        self.tp_size = tp_size
         self.output_str_only = output_str_only
         self.trust_remote_code = trust_remote_code
 
@@ -213,17 +218,37 @@ class HFRunner:
 
         # Load the model and tokenizer
         if self.model_type == "generation":
-            config = AutoConfig.from_pretrained(model_path)
+            config = AutoConfig.from_pretrained(
+                model_path, trust_remote_code=self.trust_remote_code
+            )
             if model_archs := getattr(config, "architectures"):
-                model_cls = getattr(transformers, model_archs[0])
+                try:
+                    model_cls = getattr(transformers, model_archs[0])
+                except AttributeError:
+                    model_cls = AutoModelForCausalLM
             else:
                 model_cls = AutoModelForCausalLM
-            self.base_model = model_cls.from_pretrained(
-                model_path,
-                torch_dtype=torch_dtype,
-                trust_remote_code=self.trust_remote_code,
-                low_cpu_mem_usage=True,
-            ).cuda()
+            if self.tp_size > 1:
+                # Initialize distributed setup
+                dist.init_process_group(backend="nccl")
+                # Get local rank for GPU assignment
+                local_rank = int(os.environ.get("LOCAL_RANK", 0))
+                torch.cuda.set_device(local_rank)
+                self.base_model = model_cls.from_pretrained(
+                    model_path,
+                    torch_dtype=torch_dtype,
+                    device_map="auto",
+                    trust_remote_code=self.trust_remote_code,
+                    low_cpu_mem_usage=True,
+                ).cuda()
+            else:
+                # Load model without distributed setup
+                self.base_model = model_cls.from_pretrained(
+                    model_path,
+                    torch_dtype=torch_dtype,
+                    trust_remote_code=self.trust_remote_code,
+                    low_cpu_mem_usage=True,
+                ).cuda()
         elif self.model_type == "embedding":
             if "gme-qwen2-vl" in model_path.lower():
                 self.model = AutoModelForVision2Seq.from_pretrained(
@@ -796,4 +821,59 @@ def check_close_model_outputs(
                     f"decode logprobs are not all close with {debug_text} "
                     f"decode_tolerance={decode_tolerance}."
                     f"{hf_logprobs=}, {srt_logprobs=}"
+                )
+
+
+def check_close_model_outputs_2(
+    output1: ModelOutput,
+    output2: ModelOutput,
+    prefill_tolerance: float,
+    decode_tolerance: float,
+    rouge_l_tolerance: float,
+    debug_text: str = "",
+    check_logprobs: bool = True,
+):
+    # Compare output strings
+    print(f"{output1.output_strs=}")
+    print(f"{output2.output_strs=}")
+    rouge_l_scores = calculate_rouge_l(output1.output_strs, output2.output_strs)
+    print(f"{rouge_l_scores=}")
+    assert all(
+        score >= rouge_l_tolerance for score in rouge_l_scores
+    ), f"Not all ROUGE-L scores are greater than rouge_l_tolerance={rouge_l_tolerance}"
+
+    if check_logprobs:
+        for i in range(len(output1.output_strs)):
+            # Compare input logprobs
+            output_logprobs = torch.Tensor(output1.top_input_logprobs[i])
+            output_logprobs = torch.Tensor(output2.top_input_logprobs[i])
+            input_len = output_logprobs.shape[0]
+            print(
+                "prefill logprobs max_diff",
+                torch.max(abs(output_logprobs - output_logprobs)),
+            )
+            if input_len <= 100:
+                assert torch.all(
+                    abs(output_logprobs - output_logprobs) < prefill_tolerance
+                ), (
+                    f"prefill logprobs are not all close with {debug_text} "
+                    f"prefill_tolerance={prefill_tolerance}."
+                    f"{output_logprobs=}, {output_logprobs=}"
+                )
+
+            # Compare output logprobs
+            output_logprobs = torch.Tensor(output1.top_output_logprobs[i])
+            output_logprobs = torch.Tensor(output2.top_output_logprobs[i])
+
+            print(
+                "decode logprobs max_diff",
+                torch.max(abs(output_logprobs - output_logprobs)).item(),
+            )
+            if input_len <= 100:
+                assert torch.all(
+                    abs(output_logprobs - output_logprobs) < decode_tolerance
+                ), (
+                    f"decode logprobs are not all close with {debug_text} "
+                    f"decode_tolerance={decode_tolerance}."
+                    f"{output_logprobs=}, {output_logprobs=}"
                 )

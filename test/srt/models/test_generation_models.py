@@ -111,8 +111,8 @@ class TestGenerationModels(CustomTestCase):
             srt_outputs = srt_runner.forward(prompts, max_new_tokens=max_new_tokens)
 
         check_close_model_outputs(
-            hf_outputs=hf_outputs,
-            srt_outputs=srt_outputs,
+            output1=hf_outputs,
+            output2=srt_outputs,
             prefill_tolerance=model_case.prefill_tolerance,
             decode_tolerance=model_case.decode_tolerance,
             rouge_l_tolerance=model_case.rouge_l_tolerance,

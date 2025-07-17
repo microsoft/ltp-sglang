@@ -48,41 +48,13 @@ class ModelCase:
     prefill_tolerance: float = 5e-2
     decode_tolerance: float = 5e-2
     rouge_l_tolerance: float = 1
-    skip_long_prompt: bool = False
-    trust_remote_code: bool = False
+    skip_long_prompt: bool = True
+    trust_remote_code: bool = True
 
 
-# the complete set of models to test sglang's generation model
-def get_all_models_from_args():
-    # Example usage: python3 -m unittest test_sigma_models.TestGenerationModels --model_path=/path/to/model --tp_size=8
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--model_path", type=str, default="/paidata/inference-ckp/sigma-200b"
-    )
-    parser.add_argument("--tp_size", type=int, default=8)
-    parser.add_argument("--repeat", type=int, default=10)
-    parser.add_argument("--attention_backend", type=str, default="triton")
-    parser.add_argument("--prefill_tolerance", type=float, default=5e-2)
-    parser.add_argument("--decode_tolerance", type=float, default=5e-2)
-    parser.add_argument("--trust_remote_code", action="store_true")
-    parser.add_argument("--skip_long_prompt", action="store_true")
-    args, _ = parser.parse_known_args()
-
-    return [
-        ModelCase(
-            args.model_path,
-            tp_size=args.tp_size,
-            repeat=args.repeat,
-            attention_backend=args.attention_backend,
-            prefill_tolerance=args.prefill_tolerance,
-            decode_tolerance=args.decode_tolerance,
-            trust_remote_code=args.trust_remote_code,
-            skip_long_prompt=args.skip_long_prompt,
-        )
-    ]
-
-
-ALL_MODELS = get_all_models_from_args()
+ALL_MODELS = [
+    ModelCase("/paidata/inference-ckp/sigma-200b", tp_size=8, trust_remote_code=True),
+]
 
 TORCH_DTYPES = [torch.bfloat16]
 
@@ -92,6 +64,41 @@ class TestGenerationModels(CustomTestCase):
     @classmethod
     def setUpClass(cls):
         mp.set_start_method("spawn", force=True)
+
+    def assert_sgl_consistency(
+        self,
+        prompts: List[str],
+        model_case: ModelCase,
+        torch_dtype: torch.dtype,
+    ) -> None:
+        model_path = model_case.model_path
+        max_new_tokens = 32
+
+        first_srt_outputs = None
+        print(f"Testing model {model_path} with torch_dtype={torch_dtype}")
+        print(ModelCase)
+        with SRTRunner(
+            model_path,
+            tp_size=model_case.tp_size,
+            torch_dtype=torch_dtype,
+            model_type="generation",
+            trust_remote_code=model_case.trust_remote_code,
+            attention_backend=model_case.attention_backend,
+        ) as srt_runner:
+            for i in range(model_case.repeat):  # Repeat to get stable outputs
+                srt_outputs = srt_runner.forward(prompts, max_new_tokens=max_new_tokens)
+                if first_srt_outputs is None:
+                    first_srt_outputs = srt_outputs
+                else:
+                    print(f"Comparing SRT outputs for repeat {i+1}/{model_case.repeat}")
+                    check_close_model_outputs(
+                        output1=first_srt_outputs,
+                        output2=srt_outputs,
+                        prefill_tolerance=model_case.prefill_tolerance,
+                        decode_tolerance=model_case.decode_tolerance,
+                        rouge_l_tolerance=model_case.rouge_l_tolerance,
+                        debug_text=f"model_path={model_path} prompts={prompts}",
+                    )
 
     def assert_close_logits_and_output_strs(
         self,
@@ -107,31 +114,33 @@ class TestGenerationModels(CustomTestCase):
         )
         max_new_tokens = 32
 
-        # repeated_srt_outputs = []
-        first_srt_outputs = None
+        with HFRunner(
+            model_path,
+            torch_dtype=torch_dtype,
+            tp_size=model_case.tp_size,
+            model_type="",
+            trust_remote_code=model_case.trust_remote_code,
+        ) as hf_runner:
+            hf_outputs = hf_runner.forward(prompts, max_new_tokens=max_new_tokens)
+
         with SRTRunner(
             model_path,
-            tp_size=model_case.tp_size,
             torch_dtype=torch_dtype,
+            tp_size=model_case.tp_size,
             model_type="generation",
             trust_remote_code=model_case.trust_remote_code,
-            attention_backend=model_case.attention_backend,
+            attention_backend="triton",
         ) as srt_runner:
-            for i in range(model_case.repeat):  # Repeat to get stable outputs
-                srt_outputs = srt_runner.forward(prompts, max_new_tokens=max_new_tokens)
-                # repeated_srt_outputs.append(srt_outputs)
-                if first_srt_outputs is None:
-                    first_srt_outputs = srt_outputs
-                else:
-                    print(f"Comparing SRT outputs for repeat {i+1}/{model_case.repeat}")
-                    check_close_model_outputs(
-                        hf_outputs=first_srt_outputs,
-                        srt_outputs=srt_outputs,
-                        prefill_tolerance=model_case.prefill_tolerance,
-                        decode_tolerance=model_case.decode_tolerance,
-                        rouge_l_tolerance=model_case.rouge_l_tolerance,
-                        debug_text=f"model_path={model_path} prompts={prompts}",
-                    )
+            srt_outputs = srt_runner.forward(prompts, max_new_tokens=max_new_tokens)
+
+        check_close_model_outputs(
+            output1=hf_outputs,
+            output2=srt_outputs,
+            prefill_tolerance=model_case.prefill_tolerance,
+            decode_tolerance=model_case.decode_tolerance,
+            rouge_l_tolerance=model_case.rouge_l_tolerance,
+            debug_text=f"model_path={model_path} prompts={prompts}",
+        )
 
     @unittest.skipIf(is_in_ci(), "CI only runs selected models for simplicity")
     def test_all_models(self):
