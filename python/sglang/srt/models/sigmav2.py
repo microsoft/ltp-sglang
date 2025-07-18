@@ -489,4 +489,8 @@ class SigmaV2ForCausalLM(nn.Module):
                     weight_loader(param, loaded_weight)
 
 
-EntryClass = SigmaV2ForCausalLM
+class SigmaForCausalLM(SigmaV2ForCausalLM):
+    pass
+
+
+EntryClass = [SigmaV2ForCausalLM, SigmaForCausalLM]
