@@ -872,7 +872,8 @@ register_conv_template(
         system_template="<|endoftext|><|system|>{system_message}<|end|>",
         system_message=(
             "You are an AI assistant developed by Microsoft. "
-            "You are helpful for user to handle daily tasks."
+            "You are helpful for user to handle daily tasks. "
+            "Please think step by step when answering the question."
         ),
         roles=("<|user|>", "<|assistant|>"),
         sep_style=SeparatorStyle.NO_COLON_SINGLE,
