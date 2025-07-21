@@ -64,7 +64,7 @@ def moe(config: Dict[str, Any], seq_len: int = 1024) -> int:
     intermediate_size = get_config_value(config, ["moe_intermediate_size"], config["intermediate_size"])
     
     return (2 * seq_len * num_experts_per_tok * 
-            (hidden_size * intermediate_size * 3 + intermediate_size // 2) + 
+            (hidden_size * intermediate_size * 3) + 
             2 * seq_len * hidden_size * num_experts)
 
 def get_model_flops(model_name: str, config_path: str, seq_len: int = 1, kv_cache: int = 0) -> int:
@@ -94,7 +94,6 @@ def get_model_flops(model_name: str, config_path: str, seq_len: int = 1, kv_cach
         count += mla_attention(config, seq_len=seq_len, kv_cache=kv_cache) * total_layers
     else:
         count += mha_attention(config, seq_len=seq_len, kv_cache=kv_cache) * total_layers
-
     count += gateup_mlp(config, seq_len=seq_len) * dense_layers
     count += moe(config, seq_len=seq_len) * (total_layers - dense_layers)    
     return count

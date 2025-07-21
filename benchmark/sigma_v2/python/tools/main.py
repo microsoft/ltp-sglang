@@ -33,7 +33,6 @@ def get_model_results(bsz, seq_len, model_latency={}):
     df = df.set_index(("Model"))
     df.columns = pd.MultiIndex.from_tuples(df.columns)
     print(df.round(4))
-    df.to_csv('model_results.csv', index=True)
     return df
 
 def get_model_param_cache(bsz=1, seq_len=-1):
@@ -48,13 +47,14 @@ def get_model_param_cache(bsz=1, seq_len=-1):
     return model_param_kv_cache
 
 def main():
-    argparser = argparse.ArgumentParser(description="Model Performance Analysis")
+    argparser = argparse.ArgumentParser(description="Model  Analysis")
     argparser.add_argument("--bsz", type=int, default=1, help="Batch size for the model")
     argparser.add_argument("--seq_len", type=int, default=1024, help="Sequence length for the model")
     args = argparser.parse_args()
     bsz = args.bsz
     seq_len = args.seq_len
     summary_df = get_model_results(bsz, seq_len)
-    
+    summary_df.to_csv('model_results.csv', index=True)
+
 if __name__ == "__main__":
     main()

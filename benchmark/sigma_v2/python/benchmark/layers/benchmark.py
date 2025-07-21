@@ -8,13 +8,14 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-from attn import AttentionBenchmark
+from attn import MLAAttentionBenchmark
 from linear import LinearBenchmark
 from exp import ExpBenchmark
 from constants import layer_configs, layer_fig_groups, results_dir
 
 available_benchmarks = {
-    "attention": AttentionBenchmark,
+    "mla": MLAAttentionBenchmark,
+    "mha": MHAAttentionBenchmark,
     "linear": LinearBenchmark,
     "exp": ExpBenchmark,
 }
@@ -133,7 +134,7 @@ def load_existing_results(layers: list):
 
 def main():
     parser = argparse.ArgumentParser(description="Benchmark various layers")
-    parser.add_argument("--layer", type=str, choices=["all", "attention", "linear", "exp"],
+    parser.add_argument("--layer", type=str, choices=["all", "mla", "mha" "linear", "exp"],
                         default="all", help="Type of layer to benchmark")
     parser.add_argument("--batch-sizes", type=int, nargs="+", default=[1],
                         help="Batch sizes to benchmark")

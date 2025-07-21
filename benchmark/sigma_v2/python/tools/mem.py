@@ -1,7 +1,5 @@
 import json
-import numpy as np
-from collections import defaultdict
-from constant import model_precision, model_config, model_length
+from constant import model_precision
 from util import get_config_value
 
 SEQ_LEN = 1024

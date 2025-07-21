@@ -2,6 +2,7 @@ import pandas as pd
 import os
 import glob
 from constant import LOG_DIR, CSV_DIR, model_hardware
+from fig import plot_per_model_mfu, plot_per_model_latency
 from flop import get_model_flops
 
 def extract_latency(log_file):
@@ -19,20 +20,23 @@ def extract_latency(log_file):
                 tp = int(line.split("--tensor-parallel-size=")[1].split("\'")[0])
                 dp = tp if "--enable-dp-attention" in line else 1
                 ep = tp if "--enable-ep-moe" in line else 1
-            if "Phoenix Device" in line:
-                phase, bsz, seq, latency = line.split("Phoenix Device ")[1].split(" ")[1:5]
+                if dp != 1 and ep != 1:
+                    tp = 1
+                no_of_device = max(tp, dp, ep)
+            if "Device 0" in line and "Latency" in line:
+                fields = line.split("Device ")[1].split(" ")
+                phase, bsz, seq, latency = fields[1], fields[3], fields[4], fields[5]
                 bsz, seq, latency = int(bsz), int(seq), float(latency)
-                bsz = bsz * dp
+                bsz = bsz * dp if dp <=8 else bsz * 4
                 model_name = model_arch.split("/")[0]
-                model_name = "dpsk" if model_name == "deepseek" else model_name
                 config_path = f"../../model_conf/{model_arch}.json"
                 if phase == "Prefill":
-                    flops = get_model_flops(model_name, config_path, bsz=bsz, seq_len=seq, kv_cache=0) / 1e12
-                    mfu = flops / (float(latency) / 1000) / (model_hardware[model_name] * tp) * 100
+                    flops = get_model_flops(model_name, config_path, seq_len=seq, kv_cache=0) / 1e12 * bsz
+                    mfu = flops / (float(latency) / 1000) / (model_hardware[model_name] * no_of_device) * 100
                     prefill_latencies.append((tp, dp, ep, bsz, seq, latency, mfu)) 
                 else:
-                    flops = get_model_flops(model_name, config_path, bsz=bsz, seq_len=1, kv_cache=seq) / 1e12
-                    mfu = flops / (float(latency) / 1000) / (model_hardware[model_name] * tp) * 100 
+                    flops = get_model_flops(model_name, config_path, seq_len=1, kv_cache=seq) / 1e12 * bsz
+                    mfu = flops / (float(latency) / 1000) / (model_hardware[model_name] * no_of_device) * 100 
                     seq -= 1
                     decode_latencies.append((tp, dp, ep, bsz, seq, latency, mfu))          
     return prefill_latencies, decode_latencies
@@ -60,6 +64,7 @@ def main():
         for conf, log_file in logs:
             print(f"Processing {model} {conf}")
             prefill_latencies, decode_latencies = extract_latency(log_file)
+            plot_per_model_latency(model, conf, prefill_latencies, decode_latencies)
             plot_per_model_mfu(model, conf, prefill_latencies, decode_latencies)
             model_prefill_latencies.extend(prefill_latencies)
             model_decode_latencies.extend(decode_latencies)

@@ -77,9 +77,9 @@ def get_params(model_config):
         count = embedding_lmhead(config)
 
         if model == "dpsk":
-            count += mla_attention(config) * layers
+            count += mla_attention(config) * total_layers
         else:
-            count += mha_attention(config) * layers
+            count += mha_attention(config) * total_layers
 
         count += gateup_mlp(config) * dense_layers
         count += moe(config) * (total_layers - dense_layers)

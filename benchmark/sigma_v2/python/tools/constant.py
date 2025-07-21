@@ -1,5 +1,5 @@
 LATENCY_FILE = './latency'
-LOG_DIR = '../../log/full'
+LOG_DIR = '../../log/'
 FIGURE_DIR = '../../results/figures'
 CSV_DIR = '../../results/csv'
 PRETTY_LABEL = ["Qwen3", "DeepSeek V3", "Qwen Sigma"]

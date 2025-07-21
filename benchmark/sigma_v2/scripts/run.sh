@@ -215,14 +215,15 @@ nvidia-smi -lgc "$gpuclock" || {
 
 cleanup() {
     echo "Cleaning up processes..."
+    sleep 10
     pkill -f sglang || true
     pkill -f "python.*$run_script" || true
-    sleep 5
+    sleep 10
     # Force kill any remaining processes
     pkill -f -9 sglang 2>/dev/null || true
     pkill -f -9 "python.*$run_script" 2>/dev/null || true
     pkill -f -9 nsys 2>/dev/null || true
-    sleep 3
+    sleep 10
 }
 
 while read -r bszs seq_lens; do

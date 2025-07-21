@@ -9,7 +9,7 @@ import schedule_patch
 import model_patch
 import engine_patch
 import fusion_patch
-# import gate_patch
+#import gate_patch
 from sglang.srt.server_args import prepare_server_args
 from sglang.srt.entrypoints.engine import _launch_subprocesses 
 from sglang.srt.managers.io_struct import GenerateReqInput
@@ -27,6 +27,8 @@ def launch_inference(args: List, bszs: List, seq_lens: List , max_new_tokens: in
             return response
         for batch_size in bszs:
             for seq in seq_lens:
+                #if batch_size * seq > 32768:
+                #    continue
                 if server_args.node_rank == 0:
                     logger.record("Batch size: {}, Sequence lengths: {}, Max tokens generated: {}".format(batch_size, seq, max_new_tokens))
                 input_ids = [
@@ -67,7 +69,7 @@ def main(cfg: DictConfig):
         f"--chunked-prefill-size={cfg.chunked_prefill_size}",
         f"--max-prefill-tokens={cfg.max_prefill_tokens}",
         f"--attention-backend={cfg.attention_backend}",
-        "--mem-fraction-static=0.8",
+        "--mem-fraction-static=0.5",
         "--max-running-requests=16384",
     ]
 
@@ -98,3 +100,4 @@ def main(cfg: DictConfig):
     
 if __name__ == "__main__":
     main()
+
