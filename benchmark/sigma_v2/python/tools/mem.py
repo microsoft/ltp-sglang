@@ -247,7 +247,7 @@ def get_model_mem_by_type(
     param_dtype = model_precision.get(model_name, 2)  # Default to 2 for most models
     with open(config_path, "r") as f:
         config = json.load(f)
-    layers = config.get("num_hidden_layers", config.get("n_layer"))
+    layers = get_config_value(config, "num_hidden_layers", fallback_key="n_layer")
     mem_summary: Dict[str, List[int]] = {
         "input": [],
         "kv_cache": [],
