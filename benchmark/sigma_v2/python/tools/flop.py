@@ -4,7 +4,7 @@ from util import get_config_value
 
 def embedding_lmhead(config: Dict[str, Any], seq_len: int = 1024) -> int:
     """Calculate FLOPs for embedding and language model head."""
-    vocab_size = config["vocab_size"]
+    vocab_size = get_config_value(config, ["vocab_size"], 0)
     hidden_size = get_config_value(config, ["hidden_size", "n_embd"], 768)
     return 2 * vocab_size * hidden_size * seq_len
 
