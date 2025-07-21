@@ -1,11 +1,15 @@
 import json
+from typing import Dict, Any, Tuple, List
 from constant import model_precision
 from util import get_config_value
 
-SEQ_LEN = 1024
-KV_CACHE = 0
+SEQ_LEN: int = 1024
+KV_CACHE: int = 0
 
-def get_sum(ts):
+def get_sum(ts) -> int:
+    """
+    Sums all values in the dictionary. If a value is a list, sum its elements.
+    """
     s = 0
     for t in ts.values():
         if isinstance(t, list):
@@ -14,7 +18,10 @@ def get_sum(ts):
             s += t
     return s
 
-def embedding_lmhead(config, seq_len=SEQ_LEN):
+def embedding_lmhead(config: Dict[str, Any], seq_len: int = SEQ_LEN) -> Tuple[int, Dict[str, List[int]]]:
+    """
+    Calculates memory access for embedding and LM head layers.
+    """
     vocab_size = get_config_value(config, ["vocab_size", "n_vocab"], 50257)
     hidden_size = get_config_value(config, ["hidden_size", "n_embd"], 768)
     
@@ -33,16 +40,24 @@ def embedding_lmhead(config, seq_len=SEQ_LEN):
     }
     return get_sum(memory_access), memory_access
 
-def mha_attention(config, seq_len=SEQ_LEN, kv_cache=KV_CACHE, param_dtype=2):
+def mha_attention(
+    config: Dict[str, Any], 
+    seq_len: int = SEQ_LEN, 
+    kv_cache: int = KV_CACHE, 
+    param_dtype: int = 2
+) -> Tuple[int, Dict[str, List[int]]]:
+    """
+    Calculates memory access for multi-head attention layers.
+    """
     num_attention_heads = get_config_value(config, ["num_attention_heads", "n_head"], 12)
     num_key_value_heads = get_config_value(config, ["num_key_value_heads"], num_attention_heads)
     hidden_size = get_config_value(config, ["hidden_size", "n_embd"], 768)
     head_dim = get_config_value(config, ["head_dim"], hidden_size // num_attention_heads)
     memory_access = {
         "input": [
-            seq_len * hidden_size * 2, #input
-            seq_len * num_attention_heads * head_dim * 2, #q
-            seq_len * (num_attention_heads * head_dim) * 2, #attn_output
+            seq_len * hidden_size * 2, # input
+            seq_len * num_attention_heads * head_dim * 2, # q
+            seq_len * (num_attention_heads * head_dim) * 2, # attn_output
         ],
         "kv_cache": [
             kv_cache * num_key_value_heads * head_dim * 2 * 2 # kv_cache
@@ -56,11 +71,18 @@ def mha_attention(config, seq_len=SEQ_LEN, kv_cache=KV_CACHE, param_dtype=2):
             seq_len * (num_attention_heads * head_dim) * 2, # o_proj input
             seq_len * hidden_size * 2, # o_proj output
         ]
-            
     }
     return get_sum(memory_access), memory_access
 
-def mla_attention(config, seq_len=SEQ_LEN, kv_cache=KV_CACHE, param_dtype=2):
+def mla_attention(
+    config: Dict[str, Any], 
+    seq_len: int = SEQ_LEN, 
+    kv_cache: int = KV_CACHE, 
+    param_dtype: int = 2
+) -> Tuple[int, Dict[str, List[int]]]:
+    """
+    Calculates memory access for multi-lora attention layers.
+    """
     num_attention_heads = get_config_value(config, ["num_attention_heads", "n_head"], 12)
     hidden_size = get_config_value(config, ["hidden_size", "n_embd"], 768)
     q_lora_rank = get_config_value(config, ["q_lora_rank"], 0)
@@ -123,7 +145,14 @@ def mla_attention(config, seq_len=SEQ_LEN, kv_cache=KV_CACHE, param_dtype=2):
         }
     return get_sum(memory_access), memory_access
 
-def gateup_mlp(config, seq_len=SEQ_LEN, param_dtype=2):
+def gateup_mlp(
+    config: Dict[str, Any], 
+    seq_len: int = SEQ_LEN, 
+    param_dtype: int = 2
+) -> Tuple[int, Dict[str, List[int]]]:
+    """
+    Calculates memory access for gated MLP layers.
+    """
     hidden_size = get_config_value(config, ["hidden_size", "n_embd"], 768)
     intermediate_size = get_config_value(config, ["intermediate_size", "n_inner"], 4 * hidden_size)
     memory_access = {
@@ -133,7 +162,14 @@ def gateup_mlp(config, seq_len=SEQ_LEN, param_dtype=2):
     }
     return get_sum(memory_access), memory_access
 
-def moe(config, seq_len=SEQ_LEN, param_dtype=2):
+def moe(
+    config: Dict[str, Any], 
+    seq_len: int = SEQ_LEN, 
+    param_dtype: int = 2
+) -> Tuple[int, Dict[str, List[int]]]:
+    """
+    Calculates memory access for Mixture-of-Experts layers.
+    """
     hidden_size = get_config_value(config, ["hidden_size", "n_embd"], 768)
     num_experts_per_tok = config["num_experts_per_tok"]
     num_experts = get_config_value(config, ["n_routed_experts", "num_local_experts", "num_experts"], 1)
@@ -154,7 +190,15 @@ def moe(config, seq_len=SEQ_LEN, param_dtype=2):
     }
     return get_sum(memory_access), memory_access
 
-def get_model_mem(model_name, config_path, seq_len=SEQ_LEN, kv_cache=KV_CACHE):
+def get_model_mem(
+    model_name: str, 
+    config_path: str, 
+    seq_len: int = SEQ_LEN, 
+    kv_cache: int = KV_CACHE
+) -> int:
+    """
+    Returns total memory usage for a model given its config.
+    """
     param_dtype = model_precision.get(model_name, 2)  # Default to 2 for most models
     with open(config_path, "r") as f:
         config = json.load(f)
@@ -178,18 +222,33 @@ def get_model_mem(model_name, config_path, seq_len=SEQ_LEN, kv_cache=KV_CACHE):
 
     return counts
 
-def get_mem(model_config, seq_len=SEQ_LEN, kv_cache=KV_CACHE):
-    model_memio = {}
+def get_mem(
+    model_config: Dict[str, str], 
+    seq_len: int = SEQ_LEN, 
+    kv_cache: int = KV_CACHE
+) -> Dict[str, int]:
+    """
+    Returns memory usage for all models in the config dictionary.
+    """
+    model_memio: Dict[str, int] = {}
     for model, config_path in model_config.items():
         model_memio[model] = get_model_mem(model, config_path, seq_len=seq_len, kv_cache=kv_cache)
     return model_memio
 
-def get_model_mem_by_type(model_name, config_path, seq_len=SEQ_LEN, kv_cache=KV_CACHE):
+def get_model_mem_by_type(
+    model_name: str, 
+    config_path: str, 
+    seq_len: int = SEQ_LEN, 
+    kv_cache: int = KV_CACHE
+) -> Dict[str, int]:
+    """
+    Returns memory usage by type (input, kv_cache, param, output) for a model.
+    """
     param_dtype = model_precision.get(model_name, 2)  # Default to 2 for most models
     with open(config_path, "r") as f:
         config = json.load(f)
     layers = config.get("num_hidden_layers", config.get("n_layer"))
-    mem_summary = {
+    mem_summary: Dict[str, List[int]] = {
         "input": [],
         "kv_cache": [],
         "param": [],
@@ -220,8 +279,15 @@ def get_model_mem_by_type(model_name, config_path, seq_len=SEQ_LEN, kv_cache=KV_
     per_type_mem_sum = {k: sum(v) for k, v in mem_summary.items()}
     return per_type_mem_sum
     
-def get_mem_by_type(model_config, seq_len=SEQ_LEN, kv_cache=KV_CACHE):
-    model_memio = {}
+def get_mem_by_type(
+    model_config: Dict[str, str], 
+    seq_len: int = SEQ_LEN, 
+    kv_cache: int = KV_CACHE
+) -> Dict[str, Dict[str, int]]:
+    """
+    Returns memory usage by type for all models in the config dictionary.
+    """
+    model_memio: Dict[str, Dict[str, int]] = {}
     for model, config_path in model_config.items():
         model_memio[model] = get_model_mem_by_type(model, config_path, seq_len=seq_len, kv_cache=kv_cache)
     return model_memio

@@ -1,10 +1,12 @@
+import argparse
+import pandas as pd
+from typing import Dict
 from flop import get_flops
 from params import get_params, get_param_size
 from mem import get_mem
-import argparse
-import pandas as pd
 
-def get_model_results(model_config, seq_len):
+
+def get_model_results(model_config: Dict, seq_len: int = 1024) -> pd.DataFrame:
     params = get_params(model_config)
     param_sizes = get_param_size(model_config)
     prefill_flops = get_flops(model_config, seq_len=seq_len, kv_cache=0)
