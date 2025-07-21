@@ -1,6 +1,6 @@
 import json
 from typing import Dict, Any
-from util import get_config_value
+from .util import get_config_value
 
 def embedding_lmhead(config: Dict[str, Any], seq_len: int = 1024) -> int:
     """Calculate FLOPs for embedding and language model head."""
