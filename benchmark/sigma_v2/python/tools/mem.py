@@ -1,7 +1,7 @@
 import json
 from typing import Dict, Any, Tuple, List
-from constant import model_precision
-from util import get_config_value
+from .constant import model_precision
+from .util import get_config_value
 
 SEQ_LEN: int = 1024
 KV_CACHE: int = 0
