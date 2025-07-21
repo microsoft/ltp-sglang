@@ -63,12 +63,10 @@ while [[ $# -gt 0 ]]; do
 done
 
 model=${model:-qwen_sigma}  # Default: qwen_sigma model
-local_ip=$(ip -4 addr show eth0 | grep -oP '(?<=inet\s)\d+(\.\d+){3}')
-ip=${ip:-$local_ip}       # Default: eth0 IP address
 nnodes=${nnodes:-1}       # Default: 1 node
 rank=${rank:-0}           # Default: rank 0
 tp=${tp:-8}               # Default: tensor parallel size 8
-mconf=${mconf:-layer}    # Default: 256 experts
+mconf=${mconf:-layer}     # Default: one layer model config
 dp=${dp:-0}               # Default: enable_dp_attention false
 ep=${ep:-0}               # Default: enable_ep_moe false
 deepep=${deepep:-false}   # Default: enable_deepep_moe false
@@ -76,22 +74,29 @@ wocg=${cg:-false}         # Default: disable cuda graph false
 profile=${profile:-false} # Default: profiling disabled
 gpuclock=${clock:-1980}  # Default: GPU clock speed 1980 MHz
 
+local_ip=$(ip -4 addr show eth0 | grep -oP '(?<=inet\s)\d+(\.\d+){3}')
 if (( nnodes > 1 )); then
-    conf_run="multinode"
-    ip="10.0.0.10"
+    ip=${ip:-10.0.0.10}
 else
-    conf_run="singlenode"
+    ip=${ip:-$local_ip}
 fi
 
-echo "Running in $conf_run mode."
 enable_ep="$([ "$ep" -gt 0 ] && echo "true" || echo "false")"
 enable_dp="$([ "$dp" -gt 0 ] && echo "true" || echo "false")"
 
 run_script="python/benchmark/benchmark.py"
-deploy_configs="conf/run/$conf_run.yaml"
-model_configs="conf/default.yaml"
+base_configs="conf/default.yaml"
+deploy_configs="conf/run/deploy.yaml"
+if [ ! -f "$base_configs" ]; then
+    echo "Error: Base configuration file $base_configs not found."
+    exit 1
+fi
+if [ ! -f "$deploy_configs" ]; then
+    echo "Error: Deployment configuration file $deploy_configs not found."
+    exit 1
+fi
 bsz_seq="scripts/bsz_seq.csv"
-mkdir -p log
+mkdir -p results/raw_output
 profile_folder="${model}_profile_${gpuclock}/nsys_report"
 IFS=$';'
 
@@ -103,7 +108,7 @@ declare -A mconfigs=(
 if [[ -n "${mconfigs[$mconf]}" ]]; then
     target_mconf=${mconfigs[$mconf]}
 else
-    echo "Error: Invalid model config. Please choose from exp256, exp144, exp32, fp16, full"
+    echo "Error: Invalid model config. Please choose from [layer, full]"
     exit 1
 fi
 
@@ -118,63 +123,45 @@ fi
 update_config() {
     local key=$1
     local value=$2
-    if [ -f "$deploy_configs" ]; then
-        sed -i "s/${key}: .*/${key}: [$value]/" "$deploy_configs" && echo "${key} updated to [$value]"
-    else
-        echo "Error: Configuration file $deploy_configs not found."
+    sed -i "s/${key}: .*/${key}: [$value]/" "$deploy_configs" || {
+        echo "Error: Failed to update $key in $deploy_configs"
         exit 1
-    fi
+    }
 }
 
 run_params=(
-    disable_cuda_graph="$wocg"
     model="./model_conf/$model"
-    run=$conf_run
+    disable_cuda_graph="$wocg"
+    run="deploy"
     run.dist_init_addr="$ip:30000"
     run.nnodes="$nnodes"
     run.node_rank="$rank"
     run.tensor_parallel_size="$tp"
-    run.enable_ep_moe="$enable_ep"
-    run.expert_parallel_size="$ep"
     run.enable_dp_attention="$enable_dp"
     run.data_parallel_size="$dp"
+    run.enable_ep_moe="$enable_ep"
+    run.expert_parallel_size="$ep"
     run.enable_deepep_moe="$deepep"
 )
 
 run_benchmark() {
     local enable_profile=$1
     local profile_phase=$2
-    local bsz=$3  # Default to 0 if not provided
-    local seq_len=$4  # Default to 0 if not provided
+    local bsz=$3
+    local seq_len=$4
     
-    if [ -f "$model_configs" ]; then
-        sed -i "s/enable_profile: .*/enable_profile: $enable_profile /" "$model_configs" || {
-            echo "Error: Failed to update profile setting in $model_configs"
-            return 1
-        }
-    else
-        echo "Error: Configuration file $model_configs not found."
+    sed -i "s/enable_profile: .*/enable_profile: $enable_profile /" "$base_configs" || {
+        echo "Error: Failed to update profile setting in $base_configs"
         return 1
-    fi
+    }
     
     if [ "$profile" = "true" ]; then
         # Update profile phase configuration
-        sed -i "s/profile_phase: .*/profile_phase: $profile_phase /" "$model_configs" || {
-            echo "Error: Failed to update profile phase in $model_configs"
+        sed -i "s/profile_phase: .*/profile_phase: $profile_phase /" "$base_configs" || {
+            echo "Error: Failed to update profile phase in $base_configs"
             return 1
         }
-        
-        # Determine profile subfolder
-        if [ "$profile_phase" = "prefill" ]; then
-            sub_profile_folder="${profile_phase}_profile"
-        else
-            if [ "$wocg" = "true" ]; then
-                sub_profile_folder="${profile_phase}_profile_wo_graph"
-            else
-                sub_profile_folder="${profile_phase}_profile_w_graph"
-            fi
-        fi
-        
+        sub_profile_folder="${profile_phase}_profile"
         # Create profile directory and set filename
         mkdir -p "$profile_folder"
         mkdir -p "${profile_folder}/${sub_profile_folder}"
@@ -199,8 +186,8 @@ run_benchmark() {
                 }
         fi
     else
-        echo "Running benchmark without profiling"
-        SGL_ENABLE_JIT_DEEPGEMM=1 python3 "$run_script" "${run_params[@]}" || {
+        echo "Running latency benchmark"
+        SGLANG_LOGGING_CONFIG_PATH="./scripts/log_config.json" SGL_ENABLE_JIT_DEEPGEMM=1 python3 "$run_script" "${run_params[@]}" || {
             echo "Error: Benchmark run failed"
             return 1
         }
@@ -242,6 +229,6 @@ while read -r bszs seq_lens; do
         run_benchmark "true" "decode" "$bszs" "$seq_lens"
         cleanup
     else
-        run_benchmark "false" "" "$bszs" "$seq_lens"
+        run_benchmark "false" "" "$bszs" "$seq_lens" 
     fi
 done < "$bsz_seq"

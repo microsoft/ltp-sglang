@@ -1,6 +1,5 @@
 from flop import get_flops
 from params import get_params, get_param_size
-from net import get_net
 from mem import get_mem, get_model_mem_by_type
 from constant import model_config, model_hardware, LATENCY_FILE, model_length
 import argparse
@@ -13,8 +12,6 @@ def get_model_results(bsz, seq_len, model_latency={}):
     decode_flops = get_flops(model_config, kv_cache=seq_len)
     prefill_memio = get_mem(model_config, seq_len=seq_len, kv_cache=0)
     decode_memio = get_mem(model_config, kv_cache=seq_len)
-    prefill_netio = get_net(model_config, seq_len=seq_len)
-    decode_netio = get_net(model_config)
     rows = []
     for model in model_config.keys():
         row = {
@@ -22,10 +19,8 @@ def get_model_results(bsz, seq_len, model_latency={}):
             ('Param', 'GB'): param_sizes[model] / 1e9,
             ('Prefill', 'TFlops'): prefill_flops[model] / 1e12,
             ('Prefill', 'MemTB'): prefill_memio[model] / 1e12 ,
-            ('Prefill', 'NetMB'): prefill_netio[model] / 1e6,
             ('Decode', 'TFlops'): decode_flops[model] / 1e12,
             ('Decode', 'MemTB'): decode_memio[model] / 1e12,
-            ('Decode', 'NetMB'): decode_netio[model] / 1e6,
         }
         row["Model"] = model
         rows.append(row)

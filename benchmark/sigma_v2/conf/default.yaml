@@ -1,6 +1,6 @@
 defaults:
   - _self_
-  - run: multi_gpu
+  - run: deploy
   - override hydra/hydra_logging: disabled  
   - override hydra/job_logging: disabled  
   
@@ -13,6 +13,8 @@ disable_custom_all_reduce: false
 disable_radix_cache: true
 disable_cuda_graph: false
 disable_overlap_schedule: true
+mem_fraction_static: 0.5
+max_running_requests: 16384
 
 trust_remote_code: true
 log_level: error 

@@ -5,10 +5,8 @@ import hydra
 import numpy as np
 from omegaconf import DictConfig
 from typing import List
-import schedule_patch
-import model_patch
-import engine_patch
-import fusion_patch
+import manager_patch
+import tpworker_patch
 #import gate_patch
 from sglang.srt.server_args import prepare_server_args
 from sglang.srt.entrypoints.engine import _launch_subprocesses 
@@ -18,8 +16,9 @@ logger = logging.getLogger(__name__)
 
 def launch_inference(args: List, bszs: List, seq_lens: List , max_new_tokens: int = 1):
     server_args = prepare_server_args(args)
+    logger.info(server_args)
     try:
-        tokenizer_manager, _, procs, detoken_procs = _launch_subprocesses(server_args=server_args)
+        tokenizer_manager, _  = _launch_subprocesses(server_args=server_args)
         async def runner():
             response = None
             async for item in tokenizer_manager.generate_request(request):
@@ -27,10 +26,6 @@ def launch_inference(args: List, bszs: List, seq_lens: List , max_new_tokens: in
             return response
         for batch_size in bszs:
             for seq in seq_lens:
-                #if batch_size * seq > 32768:
-                #    continue
-                if server_args.node_rank == 0:
-                    logger.record("Batch size: {}, Sequence lengths: {}, Max tokens generated: {}".format(batch_size, seq, max_new_tokens))
                 input_ids = [
                     [int(x) for x in np.random.randint(0, high=16384, size=(seq,))]
                     for _ in range(batch_size)
@@ -43,9 +38,6 @@ def launch_inference(args: List, bszs: List, seq_lens: List , max_new_tokens: in
                     }
                 )
                 ret = asyncio.get_event_loop().run_until_complete(runner())
-        for proc in procs:
-            proc.terminate()
-        detoken_procs.terminate()
     finally:
         from sglang.srt.utils import kill_process_tree
         kill_process_tree(os.getpid(), include_parent=False)
@@ -60,22 +52,19 @@ def main(cfg: DictConfig):
     
     args = [
         f"--model={cfg.model}",
-        f"--dist-init-addr={cfg.run.dist_init_addr}",
-        f"--nnodes={cfg.run.nnodes}",
-        f"--node-rank={cfg.run.node_rank}",
-        f"--tensor-parallel-size={cfg.run.tensor_parallel_size}",
         f"--log-level={cfg.log_level}",
         f"--load-format={cfg.load_format}",
         f"--chunked-prefill-size={cfg.chunked_prefill_size}",
         f"--max-prefill-tokens={cfg.max_prefill_tokens}",
         f"--attention-backend={cfg.attention_backend}",
-        "--mem-fraction-static=0.5",
-        "--max-running-requests=16384",
+        f"--mem-fraction-static={cfg.mem_fraction_static}",
+        f"--max-running-requests={cfg.max_running_requests}",
+        f"--dist-init-addr={cfg.run.dist_init_addr}",
+        f"--nnodes={cfg.run.nnodes}",
+        f"--node-rank={cfg.run.node_rank}",
+        f"--tensor-parallel-size={cfg.run.tensor_parallel_size}",
     ]
 
-    if cfg.run.get("nnodes") > 2:
-        args.append("--moe-dense-tp-size=1")
-        
     if cfg.run.get("enable_ep_moe"): 
         args.append("--enable-ep-moe")
         args.append(f"--ep-size={cfg.run.expert_parallel_size}")
@@ -84,7 +73,7 @@ def main(cfg: DictConfig):
     if cfg.run.get("enable_dp_attention"):
         args.append("--enable-dp-attention")
         args.append(f"--data-parallel-size={cfg.run.data_parallel_size}")
-        args.append("--enable-dp-lm-head")
+        args.append(f"--enable-dp-lm-head={cfg.run.enable_dp_lm_head}")
         if cfg.run.get("enable_deepep_moe"):
             args.append(f"--deepep-mode=normal")
         
@@ -95,7 +84,7 @@ def main(cfg: DictConfig):
     if cfg.get("disable_overlap_schedule"): args.append("--disable-overlap-schedule")
     if cfg.get("disable_chunked_prefix_cache"): args.append("--disable-chunked-prefix-cache")
     
-    print(args)
+    logger.info(args)
     launch_inference(args, bszs, seq_lens, max_tokens_generated)
     
 if __name__ == "__main__":

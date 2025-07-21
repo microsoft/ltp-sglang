@@ -6,7 +6,6 @@ from functools import wraps
 from typing import Optional, Union, List, Any
 from sglang.srt.managers.io_struct import GenerateReqInput, EmbeddingReqInput, TokenizedGenerateReqInput
 from sglang.srt.managers.tokenizer_manager import ReqState, TokenizerManager
-import sglang.srt.managers.scheduler as scheduler
 from sglang.srt.managers.scheduler import Scheduler
 from sglang.utils import TypeBasedDispatcher
 
@@ -130,7 +129,6 @@ def apply_real_batch_to_handling():
                 rids.append(obj.rid)
             self.send_to_scheduler.send_pyobj(tokenized_objs)
         else:
-            print("here we are in _handle_batch_request 3")
             # FIXME: When using batch and parallel_sample_num together, the perf is not optimal.
             if batch_size > 128:
                 logger.warning(

@@ -1,6 +1,6 @@
-import sglang.srt.layers.moe.topk as moe_topk
 import torch
 from typing import Optional
+import sglang.srt.layers.moe.topk as moe_topk
 from sglang.srt.distributed import get_tensor_model_parallel_world_size
 
 def biased_grouped_topk(
@@ -60,7 +60,6 @@ def biased_grouped_topk(
             selected_experts.append(chosen)
             gpu_load.index_add_(0, expert_to_gpu[chosen], torch.ones(2, dtype=torch.int32, device=device))
 
-        # Flatten the 4x2 list into 1x8
         topk_idx[token_idx] = torch.cat(selected_experts)
 
     return topk_weight, topk_idx

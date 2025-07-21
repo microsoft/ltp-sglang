@@ -1,0 +1,28 @@
+{
+    "formatters": {
+        "sglang": {
+            "class": "logging.Formatter",
+            "datefmt": "%Y-%m-%d %H:%M:%S",
+            "format": "%(asctime)s %(levelname)s %(process)d [%(filename)s:%(lineno)d] %(message)s"
+        }
+    },
+    "handlers": {
+        "sglang": {
+            "class": "concurrent_log_handler.ConcurrentRotatingFileHandler",
+            "formatter": "sglang",
+            "level": "RECORD",
+            "filename": "./results/raw_output/benchmark.log",
+            "maxBytes": 104857600,
+            "backupCount": 20
+        }
+    },
+    "loggers": {
+        "sglang": {
+            "handlers": ["sglang"],
+            "level": "RECORD",
+            "propagate": false
+        }
+    },
+    "version": 1,
+    "disable_existing_loggers": false
+}
