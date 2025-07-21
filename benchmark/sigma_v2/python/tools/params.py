@@ -1,5 +1,5 @@
 import json
-from util import get_config_value
+from .util import get_config_value
 
 def embedding_lmhead(config):
     """
@@ -100,7 +100,7 @@ def get_param_size(model_config):
         with open(config_path, "r") as file:
             config = json.load(file)
 
-        layers = config.get("num_hidden_layers", config.get("n_layer", 0))
+        layers = get_config_value(config, ["num_hidden_layers", "n_layer"], 0)
         count = embedding_lmhead(config) * 2
 
         if model == "dpsk":
@@ -111,8 +111,8 @@ def get_param_size(model_config):
         if model in ["qwen", "qwen_sigma"]:
             count += moe(config) * layers * 2
         elif model == "dpsk":
-            count += gateup_mlp(config) * config["first_k_dense_replace"]
-            count += moe(config) * (layers - config["first_k_dense_replace"])
+            count += gateup_mlp(config) * get_config_value(config, ["first_k_dense_replace"], 0)
+            count += moe(config) * (layers - get_config_value(config, ["first_k_dense_replace"], 0))
 
         model_params[model] = count
 

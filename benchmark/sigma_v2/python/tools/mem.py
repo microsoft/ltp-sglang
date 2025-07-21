@@ -272,10 +272,10 @@ def get_model_mem_by_type(
     elif model_name == "dpsk":
         _, mem_by_type = gateup_mlp(config, seq_len=seq_len, param_dtype=param_dtype)
         for k, v in mem_by_type.items():
-            mem_summary[k].extend(v * config["first_k_dense_replace"])
+            mem_summary[k].extend(v * get_config_value(config, "first_k_dense_replace", 0))
         _, mem_by_type = moe(config, seq_len=seq_len, param_dtype=param_dtype)
         for k, v in mem_by_type.items():
-            mem_summary[k].extend(v * (layers - config["first_k_dense_replace"]))
+            mem_summary[k].extend(v * (layers - get_config_value(config, "first_k_dense_replace", 0)))
     per_type_mem_sum = {k: sum(v) for k, v in mem_summary.items()}
     return per_type_mem_sum
     
