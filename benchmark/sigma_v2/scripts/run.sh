@@ -187,7 +187,7 @@ run_benchmark() {
         fi
     else
         echo "Running latency benchmark"
-        SGLANG_LOGGING_CONFIG_PATH="./scripts/log_config.json" SGL_ENABLE_JIT_DEEPGEMM=1 python3 "$run_script" "${run_params[@]}" || {
+        SGL_ENABLE_JIT_DEEPGEMM=1 python3 "$run_script" "${run_params[@]}" || {
             echo "Error: Benchmark run failed"
             return 1
         }

@@ -84,7 +84,7 @@ def main(cfg: DictConfig):
     if cfg.get("disable_overlap_schedule"): args.append("--disable-overlap-schedule")
     if cfg.get("disable_chunked_prefix_cache"): args.append("--disable-chunked-prefix-cache")
     
-    logger.info(args)
+    print(args)
     launch_inference(args, bszs, seq_lens, max_tokens_generated)
     
 if __name__ == "__main__":

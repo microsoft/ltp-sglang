@@ -37,7 +37,7 @@ def apply_timing_to_foward(profile: bool = False, profile_prefill: bool = False)
             logits_output, can_run_cuda_graph = self.model_runner.forward(forward_batch)
         end.record()
         torch.cuda.synchronize()
-        logger.info("Latency Benchmark Device {} {} {} {} {:.4f} ms".format(torch.cuda.current_device(), 
+        print("Latency Benchmark Device {} {} {} {} {:.4f} ms".format(torch.cuda.current_device(), 
                                                                     convert_to_phase(forward_batch.forward_mode), 
                                                                     forward_batch.batch_size, 
                                                                     forward_batch.seq_lens[0], 
