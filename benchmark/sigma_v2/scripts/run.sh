@@ -1,6 +1,6 @@
 #!/bin/bash
 if [[ "$1" == "-h" ]]; then
-    echo "Usage: $0 model(deepseek) ip(eth0 ip) nnodes(1) rank(0) tp(8) mconf(layer) dp(0) ep(0) deepep(false) wocg(false) profile(false) clock(1980)"
+    echo "Usage: $0 model(deepseek) ip(eth0 ip) nnodes(1) rank(0) tp(8) mconf(layer) dp(0) ep(0) deepep(false) wocg(false) profile(false) clock(1980) record(true)"
     exit 0
 fi
 
@@ -54,6 +54,10 @@ while [[ $# -gt 0 ]]; do
             clock="$2"
             shift 2
             ;;
+        --record)
+            record="$2"
+            shift 2
+            ;;
         *)
             echo "Unknown argument: $1"
             usage
@@ -73,6 +77,7 @@ deepep=${deepep:-false}   # Default: enable_deepep_moe false
 wocg=${cg:-false}         # Default: disable cuda graph false
 profile=${profile:-false} # Default: profiling disabled
 gpuclock=${clock:-1980}  # Default: GPU clock speed 1980 MHz
+record=${record:-true}   # Default: record results
 
 local_ip=$(ip -4 addr show eth0 | grep -oP '(?<=inet\s)\d+(\.\d+){3}')
 if (( nnodes > 1 )); then
@@ -84,7 +89,9 @@ fi
 enable_ep="$([ "$ep" -gt 0 ] && echo "true" || echo "false")"
 enable_dp="$([ "$dp" -gt 0 ] && echo "true" || echo "false")"
 
+benchmark_log_filename="results/raw_output/benchmark_$(date +%Y%m%d_%H%M%S).log"
 run_script="python/benchmark/benchmark.py"
+record_script="python/tools/csv_converter.py"
 base_configs="conf/default.yaml"
 deploy_configs="conf/run/deploy.yaml"
 if [ ! -f "$base_configs" ]; then
@@ -112,8 +119,8 @@ else
     exit 1
 fi
 
-echo "Using model: $target_mconf"
-echo "Using deployment config: $deploy_configs"
+echo "Using model: $target_mconf" >> "$benchmark_log_filename"
+echo "Using deployment config: $deploy_configs" >> "$benchmark_log_filename"
 
 if ! cp "$target_mconf" model_conf/$model/config.json; then
     echo "Error: Failed to copy $target_mconf to model_conf/config.json."
@@ -187,10 +194,16 @@ run_benchmark() {
         fi
     else
         echo "Running latency benchmark"
-        SGL_ENABLE_JIT_DEEPGEMM=1 python3 "$run_script" "${run_params[@]}" || {
+        SGL_ENABLE_JIT_DEEPGEMM=1 python3 -u "$run_script" "${run_params[@]}" >> "$benchmark_log_filename" 2>&1 || {
             echo "Error: Benchmark run failed"
             return 1
         }
+        if [ "$record" = "true" ]; then
+            python3 "$record_script" "$benchmark_log_filename" "results/raw_output/benchmark_results.csv" || {
+                echo "Error: Failed to convert benchmark log to CSV"
+                return 1
+            }
+        fi
     fi
     return 0
 }
@@ -214,7 +227,7 @@ cleanup() {
 }
 
 while read -r bszs seq_lens; do
-    echo "Running with batch sizes: $bszs, sequence lengths: $seq_lens"
+    echo "Running with batch sizes: $bszs, sequence lengths: $seq_lens" >> "$benchmark_log_filename"
     update_config "bszs" "$bszs"
     update_config "seq_lens" "$seq_lens"
 

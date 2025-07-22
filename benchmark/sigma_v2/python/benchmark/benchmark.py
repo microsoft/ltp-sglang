@@ -7,7 +7,7 @@ from omegaconf import DictConfig
 from typing import List
 import manager_patch
 import tpworker_patch
-#import gate_patch
+import gate_patch
 from sglang.srt.server_args import prepare_server_args
 from sglang.srt.entrypoints.engine import _launch_subprocesses 
 from sglang.srt.managers.io_struct import GenerateReqInput
@@ -73,7 +73,8 @@ def main(cfg: DictConfig):
     if cfg.run.get("enable_dp_attention"):
         args.append("--enable-dp-attention")
         args.append(f"--data-parallel-size={cfg.run.data_parallel_size}")
-        args.append(f"--enable-dp-lm-head={cfg.run.enable_dp_lm_head}")
+        if cfg.run.get("enable_dp_lm_head"):
+            args.append(f"--enable-dp-lm-head")
         if cfg.run.get("enable_deepep_moe"):
             args.append(f"--deepep-mode=normal")
         

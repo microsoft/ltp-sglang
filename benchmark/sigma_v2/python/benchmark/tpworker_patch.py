@@ -41,7 +41,7 @@ def apply_timing_to_foward(profile: bool = False, profile_prefill: bool = False)
                                                                     convert_to_phase(forward_batch.forward_mode), 
                                                                     forward_batch.batch_size, 
                                                                     forward_batch.seq_lens[0], 
-                                                                    start.elapsed_time(end) /RUN_STEPS))
+                                                                    start.elapsed_time(end) /RUN_STEPS), flush=True)
         return logits_output, can_run_cuda_graph
     
     def run_multiple_times_profile(self, forward_batch, pp_proxy_tensors=None):
