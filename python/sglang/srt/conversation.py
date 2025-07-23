@@ -873,7 +873,9 @@ register_conv_template(
         system_message=(
             "You are an AI assistant developed by Microsoft. "
             "You are helpful for user to handle daily tasks. "
-            "Please think step by step when answering the question."
+            "To answer the user's question, you can first think about the reasoning process "
+            "and then provide the user with the answer. "
+            "The think process are enclosed within <think> </think>."
         ),
         roles=("<|user|>", "<|assistant|>"),
         sep_style=SeparatorStyle.NO_COLON_SINGLE,
