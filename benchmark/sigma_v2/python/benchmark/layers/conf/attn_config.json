@@ -1,8 +1,6 @@
 {
-    "num_heads": 128,
-    "decode_head_dim_ckv": 512,
-    "decode_head_dim_kpe": 64,
-    "prefill_head_dim": 192,
-    "prefill_v_head_dim": 128,
-    "page_size": 64
+    "num_attention_heads": 64,
+    "hidden_size": 5120,
+    "num_kv_heads": 8,
+    "head_dim": 128
 }

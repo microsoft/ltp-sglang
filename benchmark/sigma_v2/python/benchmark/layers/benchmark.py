@@ -1,25 +1,25 @@
 import os
+import traceback
 os.environ["TORCH_CUDA_ARCH_LIST"] = "9.0+PTX"  # Set CUDA architecture for PyTorch
 
 import argparse
 import json
-import torch
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-from attn import MLAAttentionBenchmark
+from mla import MLAAttentionBenchmark
+from attn import AttentionBenchmark
 from linear import LinearBenchmark
 from exp import ExpBenchmark
 from constants import layer_configs, layer_fig_groups, results_dir
 
 available_benchmarks = {
     "mla": MLAAttentionBenchmark,
-    "mha": MHAAttentionBenchmark,
+    "attn": AttentionBenchmark,
     "linear": LinearBenchmark,
     "exp": ExpBenchmark,
 }
-
 
 def plot_comparison_figure(layer, df):
     """Generates and saves a comparison plot for benchmark results."""
@@ -134,14 +134,14 @@ def load_existing_results(layers: list):
 
 def main():
     parser = argparse.ArgumentParser(description="Benchmark various layers")
-    parser.add_argument("--layer", type=str, choices=["all", "mla", "mha" "linear", "exp"],
+    parser.add_argument("--layer", type=str, choices=["all", "mla", "attn", "linear", "exp"],
                         default="all", help="Type of layer to benchmark")
     parser.add_argument("--batch-sizes", type=int, nargs="+", default=[1],
                         help="Batch sizes to benchmark")
     parser.add_argument("--seq-lengths", type=int, nargs="+",
-                        default=[2048],
+                        default=[1024],
                         help="Sequence lengths to benchmark")
-    parser.add_argument("--mp-sizes", type=int, nargs="+", default=[8, 16],
+    parser.add_argument("--mp-sizes", type=int, nargs="+", default=[8],
                         help="Tensor/Expert parallel sizes")
     parser.add_argument("-f", "--force-rewrite", action="store_true",
                         help="Force rewrite of existing benchmark results")
@@ -172,17 +172,19 @@ def main():
             for mp_size in mp_sizes:
                 if mp_size == 1 and layer == "exp":
                     continue
-                try:
+                if True:
                     benchmark = available_benchmarks[layer](mp_size=mp_size, **config)
                     results = benchmark.run_benchmarks(bszs, seq_lens)
                     if mp_size not in benchmark_summary:
                         benchmark_summary[mp_size] = {}
                     for config_key, metrics in results.items():
                         benchmark_summary[mp_size].setdefault(config_key, {}).update(metrics)
-                except Exception as e:
-                    print(f"Error benchmarking layer {layer} with mp_size {mp_size}: {e}")
-                finally:
-                    torch.cuda.empty_cache()
+                # except Exception as e:
+                #     
+                #     print(f"Error benchmarking layer {layer} with mp_size {mp_size}")
+                #     traceback.print_exc()
+                # finally:
+                #     torch.cuda.empty_cache()
 
             layer_results[layer] = benchmark_summary
 

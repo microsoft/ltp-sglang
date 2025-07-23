@@ -4,14 +4,15 @@ device = "cuda:0"
 results_dir = "./results/"
 
 layer_configs = {
-    "attention": "./conf/attn_config.json",
+    "mla": "./conf/mla_config.json",
+    "attn": "./conf/attn_config.json",
     "linear": "./conf/linear_config.json",
     "exp": "./conf/moe_config.json",
     "moe": "./conf/moe_config.json"
 }
 
 layer_fig_groups = {
-    "attention": {
+    "mla": {
         "prefill": ["prefill_fa3", "prefill_flashinfer"],
         "decode": ["decode_flashinfer", "decode_fa3", "decode_flashmla"]
     }, 
