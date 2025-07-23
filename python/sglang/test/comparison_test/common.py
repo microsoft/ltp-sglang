@@ -22,7 +22,7 @@ RANDOM_INPUT_COUNT = 4
 REPEAT_COUNT = 1
 
 
-class TestConfig:
+class ComparisonTestConfig:
     """Base class for test configurations."""
 
     module_config = {}
@@ -33,6 +33,27 @@ class TestConfig:
     dtype = torch.bfloat16
     input_count = RANDOM_INPUT_COUNT
     repeat_count = REPEAT_COUNT
+
+    def __init__(
+        self,
+        module_config,
+        real_weight_prefix="",
+        log_dir="",
+        batch_sizes=BATCH_SIZES,
+        seq_lens=BATCH_SIZES,
+        dtype=torch.bfloat16,
+        input_count=RANDOM_INPUT_COUNT,
+        repeat_count=REPEAT_COUNT,
+    ):
+        """Initialize the test configuration."""
+        self.module_config = module_config
+        self.real_weight_prefix = real_weight_prefix
+        self.log_dir = log_dir
+        self.batch_sizes = batch_sizes
+        self.seq_lens = seq_lens
+        self.dtype = dtype
+        self.input_count = input_count
+        self.repeat_count = repeat_count
 
     def save_json(self, path):
         """Save the test configuration to a JSON file."""

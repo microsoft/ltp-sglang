@@ -12,6 +12,7 @@ from sglang.test.comparison_test.tensor_tracer import trace_tensors, tracing_ena
 from sglang.test.comparison_test.tf.load_weights import (
     load_random_weights,
     load_weight_from_hf_ckp,
+    save_model_weights,
 )
 from sglang.test.comparison_test.tf.test_moe import MoE
 
@@ -40,13 +41,7 @@ random_weights = [0] * len(real_weight_prefixs)
 def _run_moe_random_input(moe: MoE, dtype: torch.dtype, log_dir: str):
     """Run the MoE with random input and trace tensors."""
     moe = moe.to(dtype=dtype).cuda()
-    weight_file = os.path.join(
-        log_dir,
-    )
-    # save the weights to a file
-    with safe_open(weight_file, framework="pt", device="cpu", create=True) as f:
-        for name, param in moe.named_parameters():
-            f.set_tensor(name, param.data.cpu())
+    save_model_weights(moe, os.path.join(log_dir, WEIGHTS_FILE))
 
     with tracing_enabled(verbose=False) as tracer:
         for bs in BATCH_SIZES:
@@ -60,7 +55,7 @@ def _run_moe_random_input(moe: MoE, dtype: torch.dtype, log_dir: str):
                     print(f"    Repeat {_+1}/{REPEAT_COUNT}")
                     moe(input_tensor)
                 # Save the traced tensors
-                saved_path = os.path.join(log_dir, f"trace_random_input_{bs=}_{sl=}")
+                saved_path = os.path.join(log_dir, f"traced_tensor_{bs=}_{sl=}")
                 tracer.save_traced_tensors(saved_path)
                 print(f"Traced tensors saved to {saved_path}")
 
@@ -79,7 +74,7 @@ def test_moe_load_weights(config, real_weight_prefix, dtype):
         f"real_weights_{real_weight_prefix}",
     )
     os.makedirs(log_dir, exist_ok=True)
-    test_config = TestConfig(
+    test_config = ComparisonTestConfig(
         module_config=config,
         real_weight_prefix=real_weight_prefix,
         log_dir=log_dir,
@@ -110,12 +105,12 @@ def test_moe_random_input(config, random_weight, dtype):
         LOG_DIR,
         "tf",
         "moe",
-        f"{config['hidden_size']}",
-        f"random_input_{uuid.uuid4()[:8]}",
+        f"{config['hidden_size']}_{config['num_experts_per_tok']}_{config['n_routed_experts']}",
+        f"random_input_{uuid.uuid4().hex[:8]}",
     )
     os.makedirs(log_dir, exist_ok=True)
 
-    test_config = TestConfig(
+    test_config = ComparisonTestConfig(
         module_config=config,
         log_dir=log_dir,
         batch_sizes=BATCH_SIZES,

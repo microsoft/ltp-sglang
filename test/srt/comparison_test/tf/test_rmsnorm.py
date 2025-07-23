@@ -20,10 +20,6 @@ RMSNorm_configs = [{"hidden_size": 5120, "rms_norm_eps": 1e-6}]
 def _run_rmsnorm_random_input(rmsnorm: RMSNorm, dtype: torch.dtype, log_dir: str):
     """Run the RMSNorm with random input and trace tensors."""
     rmsnorm = rmsnorm.to(dtype=dtype).cuda()
-    weight_file = os.path.join(log_dir, WEIGHTS_FILE)
-    # save the weights to a file
-    with safe_open(weight_file, framework="pt", device="cpu", create=True) as f:
-        f.set_tensor("weight", rmsnorm.weight.cpu())
 
     with tracing_enabled(verbose=False) as tracer:
         for bs in BATCH_SIZES:
@@ -35,7 +31,7 @@ def _run_rmsnorm_random_input(rmsnorm: RMSNorm, dtype: torch.dtype, log_dir: str
                     print(f"    Repeat {_+1}/{REPEAT_COUNT}")
                     rmsnorm(input_tensor)
                 # Save the traced tensors
-                saved_path = os.path.join(log_dir, f"trace_random_input_{bs=}_{sl=}")
+                saved_path = os.path.join(log_dir, f"traced_tensor_{bs=}_{sl=}")
                 tracer.save_traced_tensors(saved_path)
                 print(f"Traced tensors saved to {saved_path}")
 
@@ -48,11 +44,11 @@ def test_rmsnorm_random_input(config, dtype):
         LOG_DIR,
         "tf",
         "rmsnorm",
-        f"{config['hidden_size']}",
-        f"random_input_{uuid.uuid4()[:8]}",
+        f"{config['hidden_size']}_{config['rms_norm_eps']}",
+        f"random_input_{uuid.uuid4().hex[:8]}",
     )
     os.makedirs(log_dir, exist_ok=True)
-    test_config = TestConfig(
+    test_config = ComparisonTestConfig(
         module_config=config,
         log_dir=log_dir,
         batch_sizes=BATCH_SIZES,
