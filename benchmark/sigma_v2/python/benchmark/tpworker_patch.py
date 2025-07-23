@@ -1,5 +1,4 @@
 import torch
-import time
 import logging
 import threading
 from typing import Optional, Tuple, Union
@@ -34,7 +33,7 @@ def apply_timing_to_foward(profile: bool = False, profile_prefill: bool = False)
         for i in range(WARMUP_STEPS + RUN_STEPS):
             if i == WARMUP_STEPS:
                 start.record()
-            logits_output, can_run_cuda_graph = self.model_runner.forward(forward_batch)
+            logits_output, can_run_cuda_graph = self.model_runner.forward(forward_batch, pp_proxy_tensors=pp_proxy_tensors)
         end.record()
         torch.cuda.synchronize()
         print("Latency Benchmark Device {} {} {} {} {:.4f} ms".format(torch.cuda.current_device(), 
@@ -57,7 +56,7 @@ def apply_timing_to_foward(profile: bool = False, profile_prefill: bool = False)
                         torch.cuda.cudart().cudaProfilerStart()
             if i == WARMUP_STEPS + 26:
                 torch.cuda.cudart().cudaProfilerStop()
-            logits_output, can_run_cuda_graph = self.model_runner.forward(forward_batch)
+            logits_output, can_run_cuda_graph = self.model_runner.forward(forward_batch, pp_proxy_tensors=pp_proxy_tensors)
         torch.cuda.synchronize()
         return logits_output, can_run_cuda_graph
     

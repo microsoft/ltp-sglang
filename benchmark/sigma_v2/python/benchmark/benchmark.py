@@ -7,7 +7,7 @@ from omegaconf import DictConfig
 from typing import List
 import manager_patch
 import tpworker_patch
-import gate_patch
+# import gate_patch
 from sglang.srt.server_args import prepare_server_args
 from sglang.srt.entrypoints.engine import _launch_subprocesses 
 from sglang.srt.managers.io_struct import GenerateReqInput

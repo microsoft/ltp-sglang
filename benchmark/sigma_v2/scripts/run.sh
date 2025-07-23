@@ -77,7 +77,7 @@ deepep=${deepep:-false}   # Default: enable_deepep_moe false
 wocg=${cg:-false}         # Default: disable cuda graph false
 profile=${profile:-false} # Default: profiling disabled
 gpuclock=${clock:-1980}  # Default: GPU clock speed 1980 MHz
-record=${record:-true}   # Default: record results
+record=${record:-false}   # Default: record results
 
 local_ip=$(ip -4 addr show eth0 | grep -oP '(?<=inet\s)\d+(\.\d+){3}')
 if (( nnodes > 1 )); then
@@ -194,7 +194,7 @@ run_benchmark() {
         fi
     else
         echo "Running latency benchmark"
-        SGL_ENABLE_JIT_DEEPGEMM=1 python3 -u "$run_script" "${run_params[@]}" >> "$benchmark_log_filename" 2>&1 || {
+        SGL_ENABLE_JIT_DEEPGEMM=1 python3 -u "$run_script" "${run_params[@]}" 2>&1 | tee -a "$benchmark_log_filename" || {
             echo "Error: Benchmark run failed"
             return 1
         }
