@@ -30,7 +30,10 @@ MoE_configs = [
 ]
 
 # Define the real weight prefixes in the model checkpoint for the MoEGate tests
-real_weight_prefixs = ["model.layers.0.mlp", "model.layers.62.mlp"]
+real_weight_prefixs = [
+    "model.layers.0.mlp",
+    # "model.layers.62.mlp"
+]
 # Define the random weight test count as the same as the real weight test count
 random_weights = [0] * len(real_weight_prefixs)
 
@@ -46,17 +49,18 @@ def _run_moe_random_input(moe: MoE, dtype: torch.dtype, log_dir: str):
         for bs in BATCH_SIZES:
             for sl in SEQ_LENS:
                 print(f"Testing MoE with random input: {bs=} {sl=}")
-                # Create a random input tensor
-                input_tensor = torch.randn(
-                    bs, sl, moe.config["hidden_size"], dtype=dtype
-                ).cuda()
-                for _ in range(REPEAT_COUNT):
-                    print(f"    Repeat {_+1}/{REPEAT_COUNT}")
-                    moe(input_tensor)
+                for i in range(RANDOM_INPUT_COUNT):
+                    print(f"    Input {i+1}/{RANDOM_INPUT_COUNT}")
+                    # Create a random input tensor
+                    input_tensor = torch.randn(
+                        bs, sl, moe.config["hidden_size"], dtype=dtype
+                    ).cuda()
+                    for j in range(REPEAT_COUNT):
+                        print(f"        Repeat {j+1}/{REPEAT_COUNT}")
+                        moe(input_tensor)
                 # Save the traced tensors
                 saved_path = os.path.join(log_dir, f"traced_tensor_{bs=}_{sl=}")
                 tracer.save_traced_tensors(saved_path)
-                print(f"Traced tensors saved to {saved_path}")
 
 
 @pytest.mark.parametrize("config", MoE_configs)

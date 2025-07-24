@@ -3,8 +3,12 @@ import os
 
 import torch
 
-CHECKPOINT_PATH = os.getenv("CHECKPOINT_PATH", "path/to/checkpoint")
+# Set the distributed environment variables
+os.environ["MASTER_ADDR"] = "127.0.0.1"
+os.environ["MASTER_PORT"] = "29500"
 
+# Set the checkpoint path and log directory
+CHECKPOINT_PATH = os.getenv("CHECKPOINT_PATH", "path/to/checkpoint")
 LOG_DIR = os.getenv("LOG_DIR", "comparison_test")
 os.makedirs(LOG_DIR, exist_ok=True)
 
@@ -25,14 +29,14 @@ REPEAT_COUNT = 1
 class ComparisonTestConfig:
     """Base class for test configurations."""
 
-    module_config = {}
-    real_weight_prefix = ""
-    log_dir = ""
-    batch_sizes = BATCH_SIZES
-    seq_lens = SEQ_LENS
-    dtype = torch.bfloat16
-    input_count = RANDOM_INPUT_COUNT
-    repeat_count = REPEAT_COUNT
+    module_config: dict = {}
+    real_weight_prefix: str = ""
+    log_dir: str = ""
+    batch_sizes: list[int] = BATCH_SIZES
+    seq_lens: list[int] = SEQ_LENS
+    dtype: torch.dtype = torch.bfloat16
+    input_count: int = RANDOM_INPUT_COUNT
+    repeat_count: int = REPEAT_COUNT
 
     def __init__(
         self,

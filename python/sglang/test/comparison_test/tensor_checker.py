@@ -41,8 +41,12 @@ def compare_tensors(tensor1, tensor2, tolerance=1e-5):
         raise ValueError(
             f"Tensors have different shapes: {tensor1.shape} vs {tensor2.shape}"
         )
-    return torch.max(torch.abs(tensor1 - tensor2)).item(), torch.allclose(
-        tensor1, tensor2, atol=tolerance
+    return (
+        torch.max(torch.abs(tensor1 - tensor2)).item(),
+        torch.allclose(tensor1, tensor2, atol=tolerance),
+        torch.nn.functional.cosine_similarity(
+            tensor1.view(-1), tensor2.view(-1), dim=0
+        ).item(),
     )
 
 

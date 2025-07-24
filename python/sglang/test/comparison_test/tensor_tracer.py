@@ -90,11 +90,11 @@ class TensorTracer:
         full_tensor = torch.cat(gathered_tensors, dim=split_dim)
         return full_tensor
 
-    def store_tensor(self, name: str, tensor: torch.Tensor):
+    def store_tensor(self, module_name, tensor_name: str, tensor: torch.Tensor):
         """Store a traced tensor"""
-        if self.enabled and self.check_trace_mark(name):
+        if self.enabled and self.check_trace_mark(module_name):
             full_tensor = self.gather_full_tensor(tensor)
-            self.traced_tensors[name] = full_tensor.clone().detach().cpu()
+            self.traced_tensors[tensor_name] = full_tensor.clone().detach().cpu()
 
     def add_tensor_group(self, name: str, tensor_group: TensorGroup):
         """Add a tensor group to the tracer"""
@@ -235,7 +235,7 @@ def trace_tensors(
                     tracer._print_log(
                         f"      Storing tensor: {args_prefix} with shape {arg.shape} and dtype {arg.dtype}"
                     )
-                    tracer.store_tensor(args_prefix, arg)
+                    tracer.store_tensor(name, args_prefix, arg)
                     if handler:
                         handler(args_prefix)
                 elif isinstance(arg, (list, tuple)):

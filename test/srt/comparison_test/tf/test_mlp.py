@@ -33,18 +33,22 @@ def _run_mlp_random_input(mlp, dtype, log_dir):
     save_model_weights(mlp, weight_file)
 
     with tracing_enabled(verbose=False) as tracer:
+        tracer.set_trace_name_filter("MLP")
         for bs in BATCH_SIZES:
             for sl in SEQ_LENS:
                 print(f"Testing MLP with real weights: {bs=} {sl=}")
-                # Create a random input tensor
-                input_tensor = torch.randn(bs, sl, mlp.hidden_size, dtype=dtype).cuda()
-                for _ in range(REPEAT_COUNT):
-                    print(f"    Repeat {_+1}/{REPEAT_COUNT}")
-                    mlp(input_tensor)
+                for i in range(RANDOM_INPUT_COUNT):
+                    print(f"    Input {i+1}/{RANDOM_INPUT_COUNT}")
+                    # Create a random input tensor
+                    input_tensor = torch.randn(
+                        bs, sl, mlp.hidden_size, dtype=dtype
+                    ).cuda()
+                    for _ in range(REPEAT_COUNT):
+                        print(f"        Repeat {_+1}/{REPEAT_COUNT}")
+                        mlp(input_tensor)
                 # Save the traced tensors
                 saved_path = os.path.join(log_dir, f"traced_tensor_{bs=}_{sl=}")
                 tracer.save_traced_tensors(saved_path)
-                print(f"Traced tensors saved to {saved_path}")
 
 
 @pytest.mark.parametrize("config", MLP_configs)
@@ -77,7 +81,7 @@ def test_mlp_load_weights(config, real_weight_prefix, dtype):
 
     # Initialize the MLP with the given configuration
     mlp = MLP(config)
-    load_weight_from_hf_ckp(mlp, real_weight_prefix)
+    load_weight_from_hf_ckp(mlp, real_weight_prefix, d)
 
     # Run the MLP with real weights and trace tensors
     print(

@@ -47,11 +47,13 @@ def _run_moe_gate_random_input(moe_gate, dtype, log_dir):
         for bs in BATCH_SIZES:
             for sl in SEQ_LENS:
                 print(f"Testing MoEGate with real weights: {bs=} {sl=}")
-                # Create a random input tensor
-                input_tensor = torch.randn(bs, sl, moe_gate.gating_dim, dtype=dtype)
-                for _ in range(REPEAT_COUNT):
-                    print(f"    Repeat {_+1}/{REPEAT_COUNT}")
-                    moe_gate(input_tensor)
+                for i in range(RANDOM_INPUT_COUNT):
+                    print(f"    Input {i+1}/{RANDOM_INPUT_COUNT}")
+                    # Create a random input tensor
+                    input_tensor = torch.randn(bs, sl, moe_gate.gating_dim, dtype=dtype)
+                    for _ in range(REPEAT_COUNT):
+                        print(f"        Repeat {_+1}/{REPEAT_COUNT}")
+                        moe_gate(input_tensor)
                 # Save the traced tensors
                 saved_path = os.path.join(log_dir, f"traced_tensor_{bs=}_{sl=}")
                 tracer.save_traced_tensors(saved_path)
