@@ -1,11 +1,8 @@
-import json
-import math
 import os
 import uuid
 
+import pytest
 import torch
-from safetensors import safe_open
-from torch import nn
 
 from sglang.test.comparison_test.common import *
 from sglang.test.comparison_test.tensor_tracer import trace_tensors, tracing_enabled
@@ -28,6 +25,7 @@ MoE_configs = [
         "hidden_size": 5120,
         "moe_intermediate_size": 2160,
         "n_shared_experts": None,
+        "hidden_act": "silu",
     }
 ]
 
@@ -40,17 +38,18 @@ random_weights = [0] * len(real_weight_prefixs)
 @torch.inference_mode()
 def _run_moe_random_input(moe: MoE, dtype: torch.dtype, log_dir: str):
     """Run the MoE with random input and trace tensors."""
-    moe = moe.to(dtype=dtype).cuda()
+    # Save the weights for benchmarking the sglang
     save_model_weights(moe, os.path.join(log_dir, WEIGHTS_FILE))
 
     with tracing_enabled(verbose=False) as tracer:
+        tracer.set_trace_name_filter("MoE")
         for bs in BATCH_SIZES:
             for sl in SEQ_LENS:
                 print(f"Testing MoE with random input: {bs=} {sl=}")
                 # Create a random input tensor
                 input_tensor = torch.randn(
                     bs, sl, moe.config["hidden_size"], dtype=dtype
-                )
+                ).cuda()
                 for _ in range(REPEAT_COUNT):
                     print(f"    Repeat {_+1}/{REPEAT_COUNT}")
                     moe(input_tensor)
@@ -70,7 +69,7 @@ def test_moe_load_weights(config, real_weight_prefix, dtype):
         LOG_DIR,
         "tf",
         "moe",
-        f"{config['hidden_size']}",
+        f"{config['hidden_size']}_{config['num_experts_per_tok']}_{config['n_routed_experts']}",
         f"real_weights_{real_weight_prefix}",
     )
     os.makedirs(log_dir, exist_ok=True)
@@ -89,9 +88,12 @@ def test_moe_load_weights(config, real_weight_prefix, dtype):
 
     # Initialize the MoE with the given configuration
     moe = MoE(config)
-    load_weight_from_hf_ckp(moe, config, real_weight_prefix)
+    load_weight_from_hf_ckp(moe, real_weight_prefix, dtype=dtype)
 
     # Run the MoE with random input and trace tensors
+    print(
+        f"Testing MoE with real weights: {config=} " f"{real_weight_prefix=} {dtype=}"
+    )
     _run_moe_random_input(moe, dtype, log_dir)
 
 
@@ -124,4 +126,8 @@ def test_moe_random_input(config, random_weight, dtype):
 
     # Initialize the MoE with the given configuration, it do not need to load weights
     moe = MoE(config)
-    load_random_weights(moe, random_weight)
+    load_random_weights(moe, dtype=dtype)
+
+    # Run the MoE with random input and trace tensors
+    print(f"Testing MoE with random input: {config=} {dtype=}")
+    _run_moe_random_input(moe, dtype, log_dir)

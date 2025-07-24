@@ -53,7 +53,6 @@ class MoEGate(nn.Module):
 
         ### select top-k experts
         if self.topk_method == "noaux_tc":
-            assert not self.training
             scores_for_choice = scores.view(
                 bsz * seq_len, -1
             ) + self.e_score_correction_bias.unsqueeze(0)

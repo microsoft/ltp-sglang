@@ -4,7 +4,7 @@ import json
 import os
 import uuid
 from contextlib import contextmanager
-from typing import Any, Callable, Dict, Optional
+from typing import Callable, List, Optional, Union
 
 import torch
 import torch.distributed as dist
@@ -19,6 +19,11 @@ class TensorGroup:
         self.id = name
         self.input_names = []
         self.output_names = []
+
+    def __init__(self, name: str, input_tensors=None, output_tensors=None):
+        self.id = name
+        self.input_names = input_tensors if input_tensors is not None else []
+        self.output_names = output_tensors if output_tensors is not None else []
 
     def add_input(self, tensor_name: str):
         self.input_names.append(tensor_name)
@@ -46,6 +51,26 @@ class TensorTracer:
         self.tensor_groups: list[TensorGroup] = []  # List of TensorGroup instances
         self.enabled = False
         self.verbose = verbose
+        self.trace_name_filter = set()  # Set of trace marks to filter by
+
+    def set_trace_name_filter(
+        self, trace_name_filter: Union[set[str], List[str], str, None]
+    ):
+        """Set the filter for trace marks"""
+        if isinstance(trace_name_filter, (set, list)):
+            self.trace_name_filter = set(trace_name_filter)
+        elif isinstance(trace_name_filter, str):
+            self.trace_name_filter = set([trace_name_filter])
+        elif trace_name_filter is None:
+            self.trace_name_filter = set()
+        else:
+            raise TypeError("trace_name_filter must be a set, list of strings, or None")
+
+    def check_trace_mark(self, name: str) -> bool:
+        """Check if the name matches the trace mark filter"""
+        if not self.trace_name_filter:
+            return True
+        return name in self.trace_name_filter
 
     def gather_full_tensor(self, tensor, parallel_size=1, split_dim=0):
         """Gather tensor from all processes to reconstruct full tensor"""
@@ -67,14 +92,15 @@ class TensorTracer:
 
     def store_tensor(self, name: str, tensor: torch.Tensor):
         """Store a traced tensor"""
-        if self.enabled:
+        if self.enabled and self.check_trace_mark(name):
             full_tensor = self.gather_full_tensor(tensor)
             self.traced_tensors[name] = full_tensor.clone().detach().cpu()
 
-    def add_tensor_group(self, tensor_group: TensorGroup):
+    def add_tensor_group(self, name: str, tensor_group: TensorGroup):
         """Add a tensor group to the tracer"""
-        self.tensor_groups.append(tensor_group)
-        self._print_log(f"Added tensor group: {tensor_group}")
+        if self.enabled and self.check_trace_mark(name):
+            self.tensor_groups.append(tensor_group)
+            self._print_log(f"Added tensor group: {tensor_group}")
 
     def _print_log(self, message: str):
         """Print log message if verbose mode is enabled"""
@@ -160,7 +186,8 @@ def trace_tensors(
             if tracer is None:
                 tracer = _global_tracer
 
-            if not tracer.enabled:
+            if not tracer.enabled or not tracer.check_trace_mark(name):
+                # If tracing is not enabled or the name does not match the filter, just call the function
                 return func(self, *args, **kwargs)
 
             local_rank = dist.get_rank() if dist.is_initialized() else 0
@@ -241,7 +268,7 @@ def trace_tensors(
             if trace_output:
                 handle_arg(f"{component_name}_output", result, tensor_group.add_output)
             # Store the tensor group
-            tracer.add_tensor_group(tensor_group)
+            tracer.add_tensor_group(name, tensor_group)
 
             return result
 

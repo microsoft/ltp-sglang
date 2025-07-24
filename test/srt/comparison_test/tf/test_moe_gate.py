@@ -38,12 +38,12 @@ random_weights = [0] * len(real_weight_prefixs)
 @torch.inference_mode()
 def _run_moe_gate_random_input(moe_gate, dtype, log_dir):
     """Run the MoEGate with random input and trace tensors."""
-    moe_gate = moe_gate.to(dtype=dtype).cuda()
     weight_file = os.path.join(log_dir, WEIGHTS_FILE)
     # save the weights to a file
     save_model_weights(moe_gate, weight_file)
 
     with tracing_enabled(verbose=False) as tracer:
+        tracer.set_trace_name_filter("MoEGate")
         for bs in BATCH_SIZES:
             for sl in SEQ_LENS:
                 print(f"Testing MoEGate with real weights: {bs=} {sl=}")
@@ -87,7 +87,7 @@ def test_moe_gate_load_weights(config, real_weight_prefix, dtype):
 
     # Initialize the MoEGate with the given configuration
     moe_gate = MoEGate(config)
-    load_weight_from_hf_ckp(moe_gate, test_config, real_weight_prefix, dtype=dtype)
+    load_weight_from_hf_ckp(moe_gate, real_weight_prefix, dtype=dtype)
     # Run the MoEGate with real weights and trace tensors
     print(
         f"Testing MoEGate with real weights: {config=} "

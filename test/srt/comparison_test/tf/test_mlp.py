@@ -1,10 +1,8 @@
-import json
 import os
 import uuid
 
 import pytest
 import torch
-from safetensors.torch import safe_open, save_file
 
 from sglang.test.comparison_test.common import *
 from sglang.test.comparison_test.tensor_tracer import tracing_enabled

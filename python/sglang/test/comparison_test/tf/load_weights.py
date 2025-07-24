@@ -10,16 +10,20 @@ from sglang.test.comparison_test.common import CHECKPOINT_PATH
 
 
 def load_random_weights(module: nn.Module, dtype=torch.bfloat16):
-    """Initialize weights for a given layer."""
+    """Initialize weights for a given layer. It is default to gpu device"""
     for name, param in module.named_parameters():
         if "weight" in name:
             param.data = torch.randn_like(param.data, dtype=dtype).cuda()
         elif "bias" in name and param is not None:
             param.data = torch.randn_like(param.data, dtype=dtype).cuda()
+    module.eval()
 
 
 def load_weight_from_hf_ckp(
-    module: nn.Module, layer_prefix: str, ckp_path: str = CHECKPOINT_PATH
+    module: nn.Module,
+    layer_prefix: str,
+    dtype=torch.bfloat16,
+    ckp_path: str = CHECKPOINT_PATH,
 ):
     """Initialize weights from a huggingface checkpoint folder according to the fields in the given nn.Module."""
     if not os.path.exists(ckp_path):
@@ -60,6 +64,9 @@ def load_weight_from_hf_ckp(
                     print(f"Loaded {key} from {file_name}")
                 else:
                     raise ValueError(f"Weight {key} not found in {file_name}")
+    # Move the module to the specified dtype and GPU
+    module = module.to(dtype=dtype).cuda()
+    module.eval()
 
     return module
 
