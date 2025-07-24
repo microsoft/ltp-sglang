@@ -12,11 +12,38 @@ import torch.nn as nn
 from transformers.activations import ACT2FN
 
 
+class TensorGroup:
+    """Class to manage a group of tensors with input and output names"""
+
+    def __init__(self, name: str):
+        self.id = name
+        self.input_names = []
+        self.output_names = []
+
+    def add_input(self, tensor_name: str):
+        self.input_names.append(tensor_name)
+
+    def add_output(self, tensor_name: str):
+        self.output_names.append(tensor_name)
+
+    def __repr__(self):
+        return f"TensorGroup(name={self.id}, inputs={self.input_names}, outputs={self.output_names})"
+
+    def to_dict(self):
+        """Convert to a dictionary representation"""
+        return {
+            "id": self.id,
+            "input": self.input_names,
+            "output": self.output_names,
+        }
+
+
 class TensorTracer:
     """Global tensor tracer for managing traced tensors across decorators"""
 
     def __init__(self, verbose: bool = False):
-        self.traced_tensors = {}
+        self.traced_tensors = {}  # { "name": tensor, ...}
+        self.tensor_groups: list[TensorGroup] = []  # List of TensorGroup instances
         self.enabled = False
         self.verbose = verbose
 
@@ -43,6 +70,11 @@ class TensorTracer:
         if self.enabled:
             full_tensor = self.gather_full_tensor(tensor)
             self.traced_tensors[name] = full_tensor.clone().detach().cpu()
+
+    def add_tensor_group(self, tensor_group: TensorGroup):
+        """Add a tensor group to the tracer"""
+        self.tensor_groups.append(tensor_group)
+        self._print_log(f"Added tensor group: {tensor_group}")
 
     def _print_log(self, message: str):
         """Print log message if verbose mode is enabled"""
@@ -77,6 +109,13 @@ class TensorTracer:
         # Save metadata
         metadata = {
             "tensors": list(self.traced_tensors.keys()),
+            "groups": {
+                group.id: {
+                    "input": group.input_names,
+                    "output": group.output_names,
+                }
+                for group in self.tensor_groups
+            },
             "details": {
                 name: {
                     "shape": list(tensor.shape),
@@ -153,11 +192,14 @@ def trace_tensors(
             )
             if layer_id is not None:
                 component_name = f"{component_name}[{layer_id}]"
+
             # Add a random suffix to avoid name collisions
             component_name += uuid.uuid4().hex[:4]
-            # Trace input tensors
+            tensor_group = TensorGroup(component_name)
 
-            def handle_arg(args_prefix, arg):
+            # A function to recursively store tensor arguments
+            def handle_arg(args_prefix: str, arg, handler: Optional[Callable] = None):
+                """Handle tracing of an argument"""
                 tracer._print_log(
                     f"    Tracing argument: {args_prefix} of type {type(arg)} "
                 )
@@ -167,6 +209,8 @@ def trace_tensors(
                         f"      Storing tensor: {args_prefix} with shape {arg.shape} and dtype {arg.dtype}"
                     )
                     tracer.store_tensor(args_prefix, arg)
+                    if handler:
+                        handler(args_prefix)
                 elif isinstance(arg, (list, tuple)):
                     for i, item in enumerate(arg):
                         handle_arg(f"{args_prefix}_item{i}", item)
@@ -178,19 +222,26 @@ def trace_tensors(
                         f"   Skipping non-tensor argument: {args_prefix} of type {type(arg)}: {arg}"
                     )
 
+            # Trace input tensors
             if trace_input:
                 # Trace positional arguments
                 for i, arg in enumerate(args):
-                    handle_arg(f"{component_name}_input_[{arg_names[i]}]", arg)
+                    handle_arg(
+                        f"{component_name}_input_[{arg_names[i]}]",
+                        arg,
+                        tensor_group.add_input,
+                    )
                 # Trace keyword arguments
-                handle_arg(f"{component_name}_input", kwargs)
+                handle_arg(f"{component_name}_input", kwargs, tensor_group.add_input)
 
             # Execute the function
             result = func(self, *args, **kwargs)
 
             # Trace output tensors
             if trace_output:
-                handle_arg(f"{component_name}_output", result)
+                handle_arg(f"{component_name}_output", result, tensor_group.add_output)
+            # Store the tensor group
+            tracer.add_tensor_group(tensor_group)
 
             return result
 

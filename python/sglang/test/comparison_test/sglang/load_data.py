@@ -1,3 +1,4 @@
+import json
 import os
 
 import torch
@@ -45,19 +46,20 @@ def load_tf_data(sgl_module: nn.Module, data_folder, dtype=torch.bfloat16):
     return sgl_module, test_config
 
 
-def load_input_output(pt_file: str):
-    """Load input and output tensors from a PyTorch file."""
-    import torch
+def load_input_output(traced_tensor_folder: str):
+    """Load input and output tensors from the traced tensor folder."""
 
-    if not os.path.exists(pt_file):
-        raise FileNotFoundError(f"PyTorch file {pt_file} does not exist.")
-
-    with torch.no_grad():
-        data = torch.load(pt_file, map_location="cpu")
-        input_tensor = data.get("input_tensor")
-        output_tensor = data.get("output_tensor")
-
-    if input_tensor is None or output_tensor is None:
-        raise ValueError("Input or output tensor not found in the file.")
-
-    return input_tensor, output_tensor
+    metadata_file = os.path.join(traced_tensor_folder, "metadata.json")
+    if not os.path.exists(metadata_file):
+        raise FileNotFoundError(f"Metadata file {metadata_file} does not exist.")
+    with open(metadata_file, "r") as f:
+        metadata = json.load(f)
+    tensors = {}
+    #     #  "tensors": [
+    #     "MLPba85_input_[hidden_states]",
+    #     "MLPba85_output"
+    #   ],
+    # The name of the tensors can be <id>_input_<name>, and <id>_<output> or <id>_output_<name>
+    # Group the tensors by their id to :
+    #    # { id: {
+    #         "input": [<input tensors>],
