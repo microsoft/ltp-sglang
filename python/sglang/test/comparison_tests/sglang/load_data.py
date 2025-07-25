@@ -4,12 +4,26 @@ import os
 import torch
 from torch import nn
 
-from sglang.test.comparison_test.common import (
+from sglang.srt.utils import set_random_seed
+from sglang.test.comparison_tests.common import (
     TEST_CONFIG_FILE,
     WEIGHTS_FILE,
     ComparisonTestConfig,
 )
-from sglang.test.comparison_test.tensor_tracer import TensorGroup
+from sglang.test.comparison_tests.tensor_tracer import TensorGroup
+
+
+def load_random_weights(sgl_module: nn.Module, dtype=torch.bfloat16):
+    """Load random weights into a sglang module."""
+    for name, param in sgl_module.named_parameters():
+        if param.requires_grad:
+            # Initialize the parameter with random values
+            param.data = torch.randn_like(param, dtype=dtype)
+            print(f"Initialized {name} with random weights")
+    # Set the module to evaluation mode
+    sgl_module = sgl_module.to(dtype=dtype).cuda()
+    sgl_module.eval()
+    return sgl_module
 
 
 def load_weights(sgl_module: nn.Module, weight_path: str, dtype=torch.bfloat16):

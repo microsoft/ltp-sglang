@@ -5,7 +5,7 @@ import torch.nn.functional as F
 import torch.nn.init as init
 from torch import nn
 
-from sglang.test.comparison_test.tensor_tracer import trace_tensors
+from sglang.test.comparison_tests.tensor_tracer import trace_tensors
 
 
 class MoEGate(nn.Module):

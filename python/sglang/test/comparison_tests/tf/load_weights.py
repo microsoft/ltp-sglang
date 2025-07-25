@@ -6,7 +6,7 @@ from safetensors import safe_open
 from safetensors.torch import save_file
 from torch import nn
 
-from sglang.test.comparison_test.common import CHECKPOINT_PATH
+from sglang.test.comparison_tests.common import CHECKPOINT_PATH
 
 
 def load_random_weights(module: nn.Module, dtype=torch.bfloat16):
@@ -61,7 +61,6 @@ def load_weight_from_hf_ckp(
                     field_name = key.replace(f"{layer_prefix}.", "")
                     param = dict(module.named_parameters())[field_name]
                     param.data = f.get_tensor(key)
-                    print(f"Loaded {key} from {file_name}")
                 else:
                     raise ValueError(f"Weight {key} not found in {file_name}")
     # Move the module to the specified dtype and GPU

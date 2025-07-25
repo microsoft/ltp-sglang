@@ -19,10 +19,10 @@ TEST_CONFIG_FILE = "test_config.json"
 # batch_size = [32, 8, 1]
 # seq_len = [4096, 2048, 1024, 512, 128, 32, 8, 1]
 BATCH_SIZES = [1]
-SEQ_LENS = [8]
+SEQ_LENS = [4096, 2048, 1024, 512]
 TEST_DTYPES = [torch.bfloat16]
 
-RANDOM_INPUT_COUNT = 4
+RANDOM_INPUT_COUNT = 5
 REPEAT_COUNT = 1
 
 

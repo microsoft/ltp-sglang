@@ -8,9 +8,9 @@ import torch.nn.functional as F
 from safetensors import safe_open
 from torch import nn
 
-from sglang.test.comparison_test.common import *
-from sglang.test.comparison_test.tensor_tracer import trace_tensors, tracing_enabled
-from sglang.test.comparison_test.tf.test_rmsnorm import RMSNorm
+from sglang.test.comparison_tests.common import *
+from sglang.test.comparison_tests.tensor_tracer import trace_tensors, tracing_enabled
+from sglang.test.comparison_tests.tf.test_rmsnorm import RMSNorm
 
 # Define the configurations for the RMSNorm tests
 RMSNorm_configs = [{"hidden_size": 5120, "rms_norm_eps": 1e-6}]
@@ -25,11 +25,15 @@ def _run_rmsnorm_random_input(rmsnorm: RMSNorm, dtype: torch.dtype, log_dir: str
         for bs in BATCH_SIZES:
             for sl in SEQ_LENS:
                 print(f"Testing RMSNorm with random input: {bs=} {sl=}")
-                # Create a random input tensor
-                input_tensor = torch.randn(bs, sl, rmsnorm.weight.size(0), dtype=dtype)
-                for _ in range(REPEAT_COUNT):
-                    print(f"    Repeat {_+1}/{REPEAT_COUNT}")
-                    rmsnorm(input_tensor)
+                for i in range(RANDOM_INPUT_COUNT):
+                    print(f"    Input {i+1}/{RANDOM_INPUT_COUNT}")
+                    # Create a random input tensor
+                    input_tensor = torch.randn(
+                        bs, sl, rmsnorm.weight.size(0), dtype=dtype
+                    ).cuda()
+                    for _ in range(REPEAT_COUNT):
+                        print(f"    Repeat {_+1}/{REPEAT_COUNT}")
+                        rmsnorm(input_tensor)
                 # Save the traced tensors
                 saved_path = os.path.join(log_dir, f"traced_tensor_{bs=}_{sl=}")
                 tracer.save_traced_tensors(saved_path)

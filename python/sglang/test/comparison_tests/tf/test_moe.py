@@ -1,9 +1,9 @@
 import torch
 from torch import nn
 
-from sglang.test.comparison_test.tensor_tracer import trace_tensors
-from sglang.test.comparison_test.tf.test_mlp import MLP
-from sglang.test.comparison_test.tf.test_moe_gate import MoEGate
+from sglang.test.comparison_tests.tensor_tracer import trace_tensors
+from sglang.test.comparison_tests.tf.test_mlp import MLP
+from sglang.test.comparison_tests.tf.test_moe_gate import MoEGate
 
 
 class MoE(nn.Module):

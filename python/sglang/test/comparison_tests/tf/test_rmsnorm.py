@@ -8,9 +8,9 @@ import torch.nn.functional as F
 from safetensors import safe_open
 from torch import nn
 
-from sglang.test.comparison_test.common import *
-from sglang.test.comparison_test.tensor_tracer import trace_tensors, tracing_enabled
-from sglang.test.comparison_test.tf.load_weights import (
+from sglang.test.comparison_tests.common import *
+from sglang.test.comparison_tests.tensor_tracer import trace_tensors, tracing_enabled
+from sglang.test.comparison_tests.tf.load_weights import (
     load_random_weights,
     load_weight_from_hf_ckp,
 )

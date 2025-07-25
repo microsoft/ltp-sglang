@@ -115,6 +115,7 @@ class TensorTracer:
     def disable(self):
         """Disable tensor tracing"""
         self.enabled = False
+        self.clear()
 
     def get_traced_tensors(self):
         """Return all traced tensors"""
@@ -123,6 +124,7 @@ class TensorTracer:
     def clear(self):
         """Clear all traced tensors"""
         self.traced_tensors = {}
+        self.tensor_groups = []
 
     def save_traced_tensors(self, save_path="traced_tensors"):
         """Save traced tensors to disk"""
@@ -155,6 +157,7 @@ class TensorTracer:
         with open(os.path.join(save_path, "metadata.json"), "w") as f:
             json.dump(metadata, f, indent=2)
         print(f"Traced tensors saved to {save_path}")
+        self.clear()
 
 
 # Global tracer instance

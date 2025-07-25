@@ -14,9 +14,9 @@ from sglang.srt.distributed.parallel_state import (
 )
 from sglang.srt.layers.moe.ep_moe.layer import EPMoE
 from sglang.srt.layers.moe.fused_moe_triton import FusedMoE
-from sglang.test.comparison_test.sglang.load_data import *
-from sglang.test.comparison_test.sglang.test_moe import MoE
-from sglang.test.comparison_test.tensor_checker import *
+from sglang.test.comparison_tests.sglang.load_data import *
+from sglang.test.comparison_tests.sglang.test_moe import MoE
+from sglang.test.comparison_tests.tensor_checker import *
 
 MOE_BENCHMARK_FOLDER = os.getenv(
     "MOE_BENCHMARK_FOLDER", "sglang/test/srt/comparison_test/sglang/benchmark"
@@ -57,17 +57,11 @@ def test_sglang_moe(moe_module_impl, tp_size):
         sgl_module = MoE(test_config.module_config, moe_module_impl)
         sgl_module = load_module(sgl_module, ben_folder, dtype=test_config.dtype)
 
-        print(f"Initialized sglang MoE module: {sgl_module}")
-        print(f"sgl_module.experts.w13_weight: {sgl_module.experts.w13_weight}")
-        print(f"sgl_module.experts.w2_weight: {sgl_module.experts.w2_weight}")
-
         # Load the input/output tensors
         for tensor_groups, tensor_dict, traced_tensor_folder in load_all_input_output(
             ben_folder
         ):
             print(f"Loaded tensors from {traced_tensor_folder}")
-            print(f"Loaded tensor groups: {tensor_groups}")
-            print(f"Loaded tensor dict: {tensor_dict}")
 
             output_pair = []  # [(transformer_output, sglang_output), ...]
             # Run the module with the loaded tensors
@@ -85,13 +79,12 @@ def test_sglang_moe(moe_module_impl, tp_size):
                 )
                 sgl_output = sgl_module(input_tensor)
 
-                if not torch.allclose(sgl_output, output_tensor, atol=1e-5):
-                    print(
-                        f"Output does not match expected output for group {group.id}:"
-                    )
+                # if not torch.allclose(sgl_output, output_tensor, atol=1e-5):
+                #     print(
+                #         f"Output does not match expected output for group {group.id}:"
+                #     )
                 output_pair.append((output_tensor, sgl_output))
             # Compare the outputs
-
             lowest_similarity = 1.0
             max_diff = 0.0
             for expected_output, sgl_output in output_pair:

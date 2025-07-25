@@ -4,14 +4,14 @@ import uuid
 import pytest
 import torch
 
-from sglang.test.comparison_test.common import *
-from sglang.test.comparison_test.tensor_tracer import tracing_enabled
-from sglang.test.comparison_test.tf.load_weights import (
+from sglang.test.comparison_tests.common import *
+from sglang.test.comparison_tests.tensor_tracer import tracing_enabled
+from sglang.test.comparison_tests.tf.load_weights import (
     load_random_weights,
     load_weight_from_hf_ckp,
     save_model_weights,
 )
-from sglang.test.comparison_test.tf.test_mlp import MLP
+from sglang.test.comparison_tests.tf.test_mlp import MLP
 
 # Define the configurations for the MLP tests
 MLP_configs = [{"hidden_size": 5120, "intermediate_size": 2160, "hidden_act": "silu"}]

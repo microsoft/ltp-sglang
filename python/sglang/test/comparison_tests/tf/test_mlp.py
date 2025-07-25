@@ -1,7 +1,7 @@
 from torch import nn
 from transformers.activations import ACT2FN
 
-from sglang.test.comparison_test.tensor_tracer import trace_tensors
+from sglang.test.comparison_tests.tensor_tracer import trace_tensors
 
 
 class MLP(nn.Module):
