@@ -76,7 +76,7 @@ def load_weight_from_hf_ckp(
     fields = [name for name, _ in sgl_module.named_parameters()]
 
     for field in fields:
-        layer_key = f"{layer_prefix}.{field}"
+        layer_key = f"{layer_prefix}.{field}" if layer_prefix else field
         if layer_key not in weight_map:
             raise KeyError(f"Weight key {layer_key} not found in index file.")
         # Get the files containing our weights
@@ -90,7 +90,9 @@ def load_weight_from_hf_ckp(
             for key in layer_keys:
                 if key in f.keys():
                     # Remove the layer prefix to get the local field name
-                    field_name = key.replace(f"{layer_prefix}.", "")
+                    field_name = (
+                        key.replace(f"{layer_prefix}.", "") if layer_prefix else key
+                    )
                     param = dict(sgl_module.named_parameters())[field_name]
                     param.data = f.get_tensor(key)
                 else:

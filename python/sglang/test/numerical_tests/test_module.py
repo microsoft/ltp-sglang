@@ -45,12 +45,14 @@ class TestModule:
         random_seed = 42
         set_random_seed(random_seed)
 
-    def _forward_func(self, module, input_tensor):
-        """Forward function to run the module with the input tensor."""
-        raise NotImplementedError("This method should be implemented in the subclass.")
-
     @torch.inference_mode()
-    def _run_module_random_input(self, shape: tuple, dtype: torch.dtype, log_dir: str):
+    def _run_module_random_input(
+        self,
+        forward_func: callable,
+        random_input_func: callable,
+        dtype: torch.dtype,
+        log_dir: str,
+    ):
         """Run the MoE with random input and trace tensors."""
 
         results = {}
@@ -63,18 +65,15 @@ class TestModule:
                 for i in range(RANDOM_INPUT_COUNT):
                     # Create a random input tensor
                     # XXX: ignore batch size for now
-                    shape = (sl,) + shape
-                    input_tensor = torch.randn(shape, dtype=dtype).cuda()
+                    inputs = random_input_func(bs, sl, dtype=dtype)
                     out_tensors = []
                     assert (
                         REPEAT_COUNT > 1
                     ), "REPEAT_COUNT should be greater than 1 to compare outputs"
                     for j in range(REPEAT_COUNT):
-                        # clone the input tensor for avoiding in-place operations
-                        input_tensor_clone = input_tensor.clone()
-                        out_tensor = self._forward_func(input_tensor_clone)
+                        # Call the forward function
+                        out_tensor = forward_func(inputs)
                         out_tensors.append(out_tensor.detach().cpu())
-
                     # Compare the outputs
                     max_diffs, is_closes, cos_similarities = compare_tensors(
                         out_tensors
@@ -95,7 +94,8 @@ class TestModule:
                 }
                 print(f"    Results for {bs=}-{sl=}:")
                 print(
-                    f"        Cosine Similarity Range: {results[f'{bs=}-{sl=}']['cosine_similarity_range']}"
+                    f"        Cosine Similarity Range: "
+                    f"{results[f'{bs=}-{sl=}']['cosine_similarity_range']}"
                 )
                 print(
                     f"        Max Diff Range: {results[f'{bs=}-{sl=}']['max_diff_range']}"
