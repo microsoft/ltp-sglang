@@ -86,7 +86,7 @@ def test_sglang_rmsnorm(tp_size):
             lowest_similarity = 1.0
             max_diff = 0.0
             for expected_output, sgl_output in output_pair:
-                max_diff, is_close, cos_similarity = compare_tensors(
+                max_diff, is_close, cos_similarity = compare_tensor_pair(
                     expected_output, sgl_output
                 )
                 print(

@@ -35,7 +35,7 @@ def compare_res(res1, res2, tolerance=1e-5):
         return None, None  # No difference found
 
 
-def compare_tensor_pair(tensor1, tensor2, tolerance=1e-5):
+def compare_tensor_pair(tensor1: torch.Tensor, tensor2: torch.Tensor, tolerance=1e-5):
     """Compare two tensors and return the maximum absolute difference."""
     if tensor1.shape != tensor2.shape:
         raise ValueError(
@@ -45,7 +45,7 @@ def compare_tensor_pair(tensor1, tensor2, tolerance=1e-5):
         torch.max(torch.abs(tensor1 - tensor2)).item(),
         torch.allclose(tensor1, tensor2, atol=tolerance),
         torch.nn.functional.cosine_similarity(
-            tensor1.view(-1), tensor2.view(-1), dim=0
+            tensor1.view(-1).double(), tensor2.view(-1).double(), dim=0
         ).item(),
     )
 

@@ -15,22 +15,22 @@ from sglang.srt.distributed.parallel_state import (
 from sglang.srt.layers.moe.ep_moe.layer import EPMoE
 from sglang.srt.layers.moe.fused_moe_triton import FusedMoE
 from sglang.test.comparison_tests.sglang.load_data import *
-from sglang.test.comparison_tests.sglang.test_moe import MoE
 from sglang.test.comparison_tests.tensor_checker import *
+from sglang.test.numerical_tests.modules.test_moe import MoE
 
 MOE_BENCHMARK_FOLDER = os.getenv(
     "MOE_BENCHMARK_FOLDER", "sglang/test/srt/comparison_test/sglang/benchmark"
 )
 
 # MoE Implementation
-MoE_modules = [
+MoE_modules_impl = [
     FusedMoE,
     # EPMoE,
 ]
 TP_SIZES = [1]
 
 
-@pytest.mark.parametrize("moe_module_impl", MoE_modules)
+@pytest.mark.parametrize("moe_module_impl", MoE_modules_impl)
 @pytest.mark.parametrize("tp_size", TP_SIZES)
 def test_sglang_moe(moe_module_impl, tp_size):
 
@@ -88,7 +88,7 @@ def test_sglang_moe(moe_module_impl, tp_size):
             lowest_similarity = 1.0
             max_diff = 0.0
             for expected_output, sgl_output in output_pair:
-                max_diff, is_close, cos_similarity = compare_tensors(
+                max_diff, is_close, cos_similarity = compare_tensor_pair(
                     expected_output, sgl_output
                 )
                 print(
