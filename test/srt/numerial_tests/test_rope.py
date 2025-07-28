@@ -59,10 +59,9 @@ class TestRoPE(TestModule):
 
         log_dir = os.path.join(
             LOG_DIR,
-            "tf",
-            "moe",
+            "rope",
             f"{rope_config['head_dim']}_{rope_config['num_attention_heads']}",
-            "no_weights",
+            f"rope-{uuid.uuid4().hex[:8]}",
         )
         os.makedirs(log_dir, exist_ok=True)
 

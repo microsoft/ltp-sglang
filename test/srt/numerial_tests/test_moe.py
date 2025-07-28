@@ -43,7 +43,10 @@ weight_prefixs = [
     "model.layers.20.mlp",
     "model.layers.40.mlp",
     "model.layers.62.mlp",
-    "random0" "random1" "random2" "random3",
+    "random0",
+    "random1",
+    "random2",
+    "random3",
 ]
 
 
@@ -68,9 +71,6 @@ class TestMoE(TestModule):
             # Load real weights from the specified prefix
             sgl_module = load_weight_from_hf_ckp(sgl_module, weight_prefix, dtype=dtype)
 
-        print(
-            f"Testing sglang MoE with weights: {moe_module_impl.__name__} {weight_prefix=} {dtype=} {tp_size=}"
-        )
         log_dir = os.path.join(
             LOG_DIR,
             "moe",
@@ -87,7 +87,9 @@ class TestMoE(TestModule):
 
         def random_input_func(bs: int, sl: int, dtype: torch.dtype) -> torch.Tensor:
             """Generate a random input tensor for MoE."""
-            return torch.randn(sl, module_config["hidden_size"], dtype=dtype).cuda()
+            return torch.randn(
+                bs * sl, module_config["hidden_size"], dtype=dtype
+            ).cuda()
 
         self._run_module_random_input(
             forward_func, random_input_func, dtype, log_dir=log_dir

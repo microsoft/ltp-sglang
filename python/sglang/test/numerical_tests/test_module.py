@@ -5,7 +5,6 @@ import torch
 from torch import nn
 
 from sglang.srt.distributed.parallel_state import (
-    cleanup_dist_env_and_memory,
     destroy_distributed_environment,
     destroy_model_parallel,
     init_distributed_environment,
@@ -18,7 +17,7 @@ from sglang.test.numerical_tests.utils.tensor_checker import compare_tensors
 
 class TestModule:
     """
-    Test general modules
+    Base class for testing consistency of SGLang modules
     """
 
     def setup_method(self, method):
@@ -53,12 +52,12 @@ class TestModule:
         dtype: torch.dtype,
         log_dir: str,
     ):
-        """Run the MoE with random input and trace tensors."""
-
+        """Run the SGLang module with random input and trace tensors."""
+        print(f"Running {self.__class__.__name__} with random input to {log_dir}")
         results = {}
         for bs in BATCH_SIZES:
             for sl in SEQ_LENS:
-                print(f"    Testing MoE with random input: {bs=} {sl=}")
+                print(f"    Testing with random input: {bs=} {sl=}")
                 all_max_diffs = []
                 all_is_closes = []
                 all_cos_similarities = []

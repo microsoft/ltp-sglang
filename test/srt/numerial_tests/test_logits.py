@@ -6,7 +6,7 @@ import torch
 from torch import nn
 
 from sglang.srt.layers.logits_processor import LogitsMetadata
-from sglang.srt.model_executor.forward_batch_info import ForwardBatch, ForwardMode
+from sglang.srt.model_executor.forward_batch_info import ForwardMode
 from sglang.test.numerical_tests.common import *
 from sglang.test.numerical_tests.modules.test_logits import (
     LogitsModule,
@@ -26,7 +26,7 @@ Logits_configs = [
     )
 ]
 
-weight_prefixs = ["", "random0"]
+weight_prefixs = ["", "random0", "random1", "random2", "random3"]
 
 
 class TestLogits(TestModule):
@@ -49,16 +49,12 @@ class TestLogits(TestModule):
         else:
             # Load real weights from a model checkpoint
             load_weight_from_hf_ckp(logits_module, weight_prefix, dtype)
-        print(
-            f"Testing logits with weights: {logits_config=} "
-            f"{weight_prefix=} {dtype=}"
-        )
+
         log_dir = os.path.join(
             LOG_DIR,
             "logits",
             f"{logits_config.vocab_size}_{logits_config.hidden_size}",
-            weight_prefix,
-            f"weights_{weight_prefix}",
+            f"weights-{weight_prefix}",
         )
         os.makedirs(log_dir, exist_ok=True)
 
@@ -71,7 +67,7 @@ class TestLogits(TestModule):
             return logits_res.next_token_logits
 
         def random_input_func(bs, sl, dtype):
-            tensor = torch.randn(sl, logits_config.hidden_size, dtype=dtype).cuda()
+            tensor = torch.randn(bs * sl, logits_config.hidden_size, dtype=dtype).cuda()
 
             logit_metadata = LogitsMetadata(
                 forward_mode=ForwardMode.EXTEND,

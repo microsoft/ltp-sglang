@@ -14,6 +14,7 @@ from sglang.test.numerical_tests.utils.load_data import (
 )
 from sglang.test.numerical_tests.utils.tensor_checker import *
 
+# Define the configurations for the Token Embedding tests
 Embedding_configs = [
     {
         "vocab_size": 200064,
@@ -23,6 +24,8 @@ Embedding_configs = [
 weight_prefixs = [
     "model.embed_tokens",
     "random0",
+    "random1",
+    "random2",
 ]
 
 
@@ -52,15 +55,11 @@ class TestTokenEmbedding(TestModule):
                 embedding_module, weight_prefix, dtype=dtype
             )
 
-        print(
-            f"Testing token embedding with weights: {embedding_config=} "
-            f"{weight_prefix=} {dtype=}"
-        )
         log_dir = os.path.join(
             LOG_DIR,
             "token_embedding",
             f"{embedding_config['hidden_size']}_{embedding_config['vocab_size']}",
-            f"real_weights_{weight_prefix}",
+            f"weights-{weight_prefix}",
         )
         os.makedirs(log_dir, exist_ok=True)
 
