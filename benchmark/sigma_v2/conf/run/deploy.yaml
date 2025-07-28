@@ -11,5 +11,5 @@ enable_deepep_moe: true
 expert_parallel_size: 16
 
 bszs: [1]
-seq_lens: [1024]
+seq_lens: [500]
 max_tokens_generated: 2

@@ -2,7 +2,7 @@ import torch
 from triton.testing import do_bench
 import matplotlib.pyplot as plt
 
-from sgl_kernel.flash_attn import flash_attn_varlen_func, flash_attn_with_kvcache
+from sgl_kernel.flash_attn import flash_attn_with_kvcache
 from layer import LayerBenchmark
 
 class AttentionBenchmark(LayerBenchmark):

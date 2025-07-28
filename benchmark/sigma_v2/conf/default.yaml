@@ -8,7 +8,7 @@ model: ./model_conf/grok
 chunked_prefill_size: 1048576
 max_prefill_tokens: 1048576
 
-attention_backend: fa3 
+attention_backend: flashinfer 
 disable_custom_all_reduce: false
 disable_radix_cache: true
 disable_cuda_graph: false

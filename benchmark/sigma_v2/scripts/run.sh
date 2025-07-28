@@ -186,7 +186,6 @@ run_benchmark() {
                 -o "$profile_filename" \
                 --export sqlite \
                 --force-overwrite true \
-                --cuda-memory-usage true \
                 python3 "$run_script" "${run_params[@]}" || {
                     echo "Error: Profiling run failed"
                     return 1

@@ -16,7 +16,7 @@ import pandas as pd
 from einops import rearrange
 from triton.testing import do_bench
 import flashinfer
-from flash_attn_interface import flash_attn_with_kvcache, flash_attn_varlen_func, get_scheduler_metadata
+from sgl_kernel.flash_attn import flash_attn_with_kvcache, flash_attn_varlen_func
 from flash_mla import flash_mla_with_kvcache, get_mla_metadata
 from layer import LayerBenchmark
 
@@ -46,7 +46,7 @@ class MLAAttentionBenchmark(LayerBenchmark):
                 num_heads: Total number of attention heads
                 mp_size: Model parallelism size
         """
-        super().__init__("Attention")
+        super().__init__("MLA")
         self.page_size = page_size
         
         # Decode attention parameters
@@ -179,11 +179,6 @@ class MLAAttentionBenchmark(LayerBenchmark):
             # Rearrange KV cache for paged format
             k_cache, v_cache = [rearrange(x, "b (n p) h d -> (b n) p h d", p=self.page_size) for x in [kpe, ckv]]
             
-            # Get scheduler metadata for FA3
-            scheduler_metadata = get_scheduler_metadata(
-                    bsz, 1, seq_len, self.num_heads_per_device, self.num_heads_per_device, self.decode_head_dim_kpe,
-                    cache_seqlens, q_nope.dtype, headdim_v=self.decode_head_dim_ckv, page_size=self.page_size, causal=False
-            )
             
             # Define benchmark function
             def run_fa3():
@@ -196,7 +191,6 @@ class MLAAttentionBenchmark(LayerBenchmark):
                             num_splits=num_splits, 
                             page_table=page_table, 
                             causal=False,
-                            scheduler_metadata=scheduler_metadata,
                     )
             
             # Initial run to ensure everything is loaded

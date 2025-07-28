@@ -142,7 +142,6 @@ class ExpBenchmark(LayerBenchmark):
             
             # Initialize the MoE model
             experts = EPMoE(
-                layer_id=0,
                 num_experts=self.num_experts,
                 top_k=self.top_k + 1,  # EPMoE uses an extra slot
                 hidden_size=self.hidden_size,
@@ -192,7 +191,6 @@ class ExpBenchmark(LayerBenchmark):
             
             # Initialize the MoE model with normal mode
             experts = DeepEPMoE(
-                layer_id=0,
                 num_experts=self.num_experts,
                 top_k=self.top_k + 1,
                 hidden_size=self.hidden_size,
@@ -219,7 +217,8 @@ class ExpBenchmark(LayerBenchmark):
             topk_weights = torch.randn((bsz * seq_len, self.top_k), dtype=torch.float32, device=self.device)
             
             # Set up tokens per expert distribution (simplified for benchmark)
-            tokens_per_expert = [max(128, bsz * seq_len)] * 8 + [0] * 8
+            
+            tokens_per_expert = [max(128, bsz * seq_len)] * 2 + [0] * 14
             
             def run_moe():
                 return experts(
@@ -266,7 +265,6 @@ class ExpBenchmark(LayerBenchmark):
             
             # Initialize the MoE model with low latency mode
             experts = DeepEPMoE(
-                layer_id=0,
                 num_experts=self.num_experts,
                 top_k=self.top_k + 1,
                 hidden_size=self.hidden_size,
