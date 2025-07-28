@@ -161,6 +161,8 @@ class AttentionLayer(nn.Module):
 
 
 class MockModelRunner:
+    """Mock model runner for testing attention layer with different backends."""
+
     def __init__(
         self,
         page_size=1,
@@ -175,6 +177,7 @@ class MockModelRunner:
         self.dtype = dtype
         attention_arch = AttentionArch.MHA
 
+        # Create a mock model config
         self.model_config = type(
             "ModelConfig",
             (),
@@ -305,36 +308,6 @@ class AttentionLayerTester:
 
         return forward_batch
 
-    def _setup_kv_cache(self, forward_batch, cache_len):
-        # Create constant values for the prefix cache for easy debugging
-        cache_k = torch.ones(
-            self.batch_size * cache_len,
-            self.num_heads,
-            self.head_dim,
-            dtype=self.dtype,
-            device=self.device,
-        )
-        cache_v = (
-            torch.ones(
-                self.batch_size * cache_len,
-                self.num_heads,
-                self.head_dim,
-                dtype=self.dtype,
-                device=self.device,
-            )
-            * 2
-        )
-
-        # Set the prefix KV cache
-        forward_batch.token_to_kv_pool.set_kv_buffer(
-            self.attention_layer.attn,
-            torch.arange(self.batch_size * cache_len, device=self.device),
-            cache_k,
-            cache_v,
-            self.attention_layer.attn.k_scale,
-            self.attention_layer.attn.v_scale,
-        )
-
     def forward(
         self,
         positions: torch.Tensor,
@@ -343,7 +316,4 @@ class AttentionLayerTester:
         """Forward pass through the attention layer."""
         forward_batch = self._create_forward_batch(q_len=self.seq_len)
         self.attn_backend.init_forward_metadata(forward_batch)
-
-        # XXX
-        # self._setup_kv_cache(forward_batch, cache_len=self.seq_len)
         return self.attention_layer(positions, hidden_states, forward_batch)

@@ -4,12 +4,12 @@ import torch
 from sglang.srt.layers.attention.torch_native_backend import TorchNativeAttnBackend
 from sglang.srt.layers.attention.triton_backend import TritonAttnBackend
 from sglang.srt.layers.dp_attention import initialize_dp_attention
-from sglang.test.numerical_tests.common import *
 from sglang.test.numerical_tests.modules.test_attention import (
     AttentionLayer,
     AttentionLayerTester,
 )
 from sglang.test.numerical_tests.test_module import TestModule
+from sglang.test.numerical_tests.utils.common import *
 from sglang.test.numerical_tests.utils.load_data import (
     load_random_weights,
     load_weight_from_hf_ckp,

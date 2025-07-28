@@ -1,7 +1,5 @@
-import json
 import os
 
-import pytest
 import torch
 
 # Set the distributed environment variables

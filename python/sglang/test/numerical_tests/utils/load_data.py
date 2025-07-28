@@ -5,7 +5,7 @@ import torch
 from safetensors import safe_open
 from torch import nn
 
-from sglang.test.numerical_tests.common import CHECKPOINT_PATH
+from sglang.test.numerical_tests.utils.common import CHECKPOINT_PATH
 
 
 def load_random_weights(sgl_module: nn.Module, dtype=torch.bfloat16):
