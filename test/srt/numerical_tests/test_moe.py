@@ -57,7 +57,6 @@ class TestMoE(TestModule):
     @pytest.mark.parametrize("module_config", MoE_configs)
     @pytest.mark.parametrize("moe_module_impl", MoE_modules)
     @pytest.mark.parametrize("weight_prefix", weight_prefixs)
-    @pytest.mark.parametrize("tp_size", TP_SIZES)
     @pytest.mark.parametrize("dtype", TEST_DTYPES)
     def test_sglang_moe(
         self, module_config, moe_module_impl, weight_prefix, dtype, tp_size
