@@ -46,6 +46,8 @@ from sglang.srt.utils import MultiprocessingSerializer, broadcast_pyobj, set_ran
 
 logger = logging.getLogger(__name__)
 
+WARMUP_STEPS = 50
+RUN_STEPS = 50
 
 class TpModelWorker:
     """A tensor parallel model worker."""
@@ -192,6 +194,34 @@ class TpModelWorker:
             self.model_runner.token_to_kv_pool_allocator,
         )
 
+    def run_batch_generation(
+        self,
+        forward_batch: ForwardBatch,
+        pp_proxy_tensors: Optional[PPProxyTensors] = None,
+    ) -> Tuple[LogitsProcessorOutput, bool]:
+        """Run batch generation."""
+        benchmark_mode = global_server_args_dict.get("enable_benchmark", False)
+        if benchmark_mode:
+            start = torch.cuda.Event(enable_timing=True)
+            end = torch.cuda.Event(enable_timing=True)
+            for i in range(WARMUP_STEPS + RUN_STEPS):
+                if i == WARMUP_STEPS:
+                    start.record()
+                logits_output, can_run_cuda_graph = self.model_runner.forward(forward_batch, pp_proxy_tensors=pp_proxy_tensors)
+            end.record()
+            torch.cuda.synchronize()
+            phase = "Prefill" if forward_batch.forward_mode == 1 else "Decode"
+            logger.info("Latency Benchmark Device {} {} {} {} {:.4f} ms".format(torch.cuda.current_device(), 
+                                                                        phase, 
+                                                                        forward_batch.batch_size, 
+                                                                        forward_batch.seq_lens[0], 
+                                                                        start.elapsed_time(end) / RUN_STEPS))
+        else:
+            logits_output, can_run_cuda_graph = self.model_runner.forward(
+                forward_batch, pp_proxy_tensors=pp_proxy_tensors
+            )
+        return logits_output, can_run_cuda_graph
+    
     def forward_batch_generation(
         self,
         model_worker_batch: ModelWorkerBatch,
@@ -211,8 +241,12 @@ class TpModelWorker:
             )
 
         if self.pp_group.is_last_rank:
-            logits_output, can_run_cuda_graph = self.model_runner.forward(
-                forward_batch, pp_proxy_tensors=pp_proxy_tensors
+            # logits_output, can_run_cuda_graph = self.model_runner.forward(
+            #     forward_batch, pp_proxy_tensors=pp_proxy_tensors
+            # )
+            logits_output, can_run_cuda_graph = self.run_batch_generation(
+                forward_batch,
+                pp_proxy_tensors=pp_proxy_tensors,
             )
             if launch_done is not None:
                 launch_done.set()
@@ -226,7 +260,11 @@ class TpModelWorker:
 
             return logits_output, next_token_ids, can_run_cuda_graph
         else:
-            pp_proxy_tensors, can_run_cuda_graph = self.model_runner.forward(
+            # pp_proxy_tensors, can_run_cuda_graph = self.model_runner.forward(
+            #     forward_batch,
+            #     pp_proxy_tensors=pp_proxy_tensors,
+            # )
+            logits_output, can_run_cuda_graph = self.run_batch_generation(
                 forward_batch,
                 pp_proxy_tensors=pp_proxy_tensors,
             )
