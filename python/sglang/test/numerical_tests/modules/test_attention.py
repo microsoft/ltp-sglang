@@ -1,4 +1,3 @@
-import os
 from typing import Any, Dict, Iterable, Optional, Tuple, Type
 
 import torch
@@ -10,11 +9,10 @@ from sglang.srt.distributed.parallel_state import (
     get_tensor_model_parallel_rank,
     get_tensor_model_parallel_world_size,
 )
-from sglang.srt.layers.attention.base_attn_backend import AttentionBackend
+from sglang.srt.layers.attention.torch_native_backend import TorchNativeAttnBackend
+from sglang.srt.layers.attention.triton_backend import TritonAttnBackend
 from sglang.srt.layers.layernorm import RMSNorm
 from sglang.srt.layers.linear import QKVParallelLinear, RowParallelLinear
-
-# from sglang.srt.layers.quantization.base_config import QuantizationConfig
 from sglang.srt.layers.radix_attention import RadixAttention
 from sglang.srt.layers.rotary_embedding import get_rope
 from sglang.srt.mem_cache.memory_pool import MHATokenToKVPool
@@ -228,7 +226,7 @@ class AttentionLayerTester:
     def __init__(
         self,
         attention_layer: AttentionLayer,
-        attn_backend: Type[AttentionBackend],
+        attn_backend: str,
         batch_size: int,
         seq_len: int,
     ):
@@ -247,7 +245,12 @@ class AttentionLayerTester:
             max_context_len=seq_len,
         )
         self.mock_runner.model_config.num_attention_heads = attention_layer.num_heads
-        self.attn_backend = attn_backend(self.mock_runner)
+        if attn_backend == "triton":
+            self.attn_backend = TritonAttnBackend(self.mock_runner)
+        elif attn_backend == "torch_native":
+            self.attn_backend = TorchNativeAttnBackend(self.mock_runner)
+        else:
+            raise ValueError(f"Unsupported attention backend: {attn_backend}")
 
         self.batch_size = batch_size
         self.seq_len = seq_len

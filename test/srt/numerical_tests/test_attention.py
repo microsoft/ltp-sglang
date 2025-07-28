@@ -1,8 +1,8 @@
 import pytest
 import torch
 
-from sglang.srt.layers.attention.torch_native_backend import TorchNativeAttnBackend
-from sglang.srt.layers.attention.triton_backend import TritonAttnBackend
+# from sglang.srt.layers.attention.torch_native_backend import TorchNativeAttnBackend
+# from sglang.srt.layers.attention.triton_backend import TritonAttnBackend
 from sglang.srt.layers.dp_attention import initialize_dp_attention
 from sglang.test.numerical_tests.modules.test_attention import (
     AttentionLayer,
@@ -50,9 +50,8 @@ weight_prefixes = [
     "random3",
 ]
 attention_backends = [
-    TritonAttnBackend,
-    TorchNativeAttnBackend,
-    # FlashAttentionBackend,
+    "triton",
+    "torch_native",
 ]
 
 
