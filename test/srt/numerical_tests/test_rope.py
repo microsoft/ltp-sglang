@@ -1,5 +1,4 @@
 import uuid
-from operator import pos
 
 import pytest
 import torch

@@ -25,7 +25,7 @@ Logits_configs = [
     )
 ]
 
-weight_prefixs = ["", "random0", "random1", "random2", "random3"]
+weight_prefixes = ["", "random0", "random1", "random2", "random3"]
 
 
 class TestLogits(TestModule):
@@ -34,7 +34,7 @@ class TestLogits(TestModule):
     """
 
     @pytest.mark.parametrize("logits_config", Logits_configs)
-    @pytest.mark.parametrize("weight_prefix", weight_prefixs)
+    @pytest.mark.parametrize("weight_prefix", weight_prefixes)
     @pytest.mark.parametrize("dtype", TEST_DTYPES)
     def test_sglang_logits(
         self, logits_config: dict, weight_prefix: str, dtype: torch.dtype

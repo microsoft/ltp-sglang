@@ -37,7 +37,7 @@ MoE_modules = [
     EPMoE,
 ]
 # Define the real weight prefixes in the model checkpoint for the MoE tests
-weight_prefixs = [
+weight_prefixes = [
     "model.layers.0.mlp",
     "model.layers.20.mlp",
     "model.layers.40.mlp",
@@ -56,7 +56,7 @@ class TestMoE(TestModule):
 
     @pytest.mark.parametrize("module_config", MoE_configs)
     @pytest.mark.parametrize("moe_module_impl", MoE_modules)
-    @pytest.mark.parametrize("weight_prefix", weight_prefixs)
+    @pytest.mark.parametrize("weight_prefix", weight_prefixes)
     @pytest.mark.parametrize("dtype", TEST_DTYPES)
     def test_sglang_moe(
         self, module_config, moe_module_impl, weight_prefix, dtype, tp_size

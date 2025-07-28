@@ -7,7 +7,7 @@ os.environ["MASTER_ADDR"] = "127.0.0.1"
 os.environ["MASTER_PORT"] = "29500"
 
 # Set the checkpoint path and log directory
-CHECKPOINT_PATH = os.getenv("CHECKPOINT_PATH", "path/to/checkpoint")
+CHECKPOINT_PATH = os.getenv("CHECKPOINT_PATH")
 LOG_DIR = os.getenv("LOG_DIR", "numerical_test")
 RESULTS_FILE = "numerical_results.json"
 os.makedirs(LOG_DIR, exist_ok=True)
