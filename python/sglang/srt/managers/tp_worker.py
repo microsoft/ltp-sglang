@@ -211,11 +211,12 @@ class TpModelWorker:
             end.record()
             torch.cuda.synchronize()
             phase = "Prefill" if forward_batch.forward_mode == 1 else "Decode"
-            logger.info("Latency Benchmark Device {} {} {} {} {:.4f} ms".format(torch.cuda.current_device(), 
-                                                                        phase, 
-                                                                        forward_batch.batch_size, 
-                                                                        forward_batch.seq_lens[0], 
-                                                                        start.elapsed_time(end) / RUN_STEPS))
+            logger.info(
+                f"Latency Benchmark Device {torch.cuda.current_device()} "
+                f"Phase: {phase}, Batch Size: {forward_batch.batch_size}, "
+                f"Sequence Length: {forward_batch.seq_lens[0]}, "
+                f"Average Latency: {start.elapsed_time(end) / RUN_STEPS:.4f} ms"
+            )
         else:
             logits_output, can_run_cuda_graph = self.model_runner.forward(
                 forward_batch, pp_proxy_tensors=pp_proxy_tensors
