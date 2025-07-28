@@ -58,9 +58,7 @@ class TestMoE(TestModule):
     @pytest.mark.parametrize("moe_module_impl", MoE_modules)
     @pytest.mark.parametrize("weight_prefix", weight_prefixes)
     @pytest.mark.parametrize("dtype", TEST_DTYPES)
-    def test_sglang_moe(
-        self, module_config, moe_module_impl, weight_prefix, dtype, tp_size
-    ):
+    def test_sglang_moe(self, module_config, moe_module_impl, weight_prefix, dtype):
         """Run the sglang MoE with random input and trace tensors."""
         sgl_module = MoE(module_config, moe_module_impl)
         if weight_prefix.count("random") > 0:
@@ -72,7 +70,7 @@ class TestMoE(TestModule):
         log_dir = os.path.join(
             LOG_DIR,
             "moe",
-            f"{moe_module_impl.__name__}-{module_config['hidden_size']}-{dtype}-{tp_size}",
+            f"{moe_module_impl.__name__}-{module_config['hidden_size']}-{dtype}",
             f"weights-{weight_prefix}",
         )
         os.makedirs(log_dir, exist_ok=True)
