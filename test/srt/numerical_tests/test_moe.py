@@ -5,7 +5,6 @@ import pytest
 import torch
 from torch import nn
 
-from sglang.srt.layers.moe.ep_moe.layer import EPMoE
 from sglang.srt.layers.moe.fused_moe_triton import FusedMoE
 from sglang.test.numerical_tests.modules.test_moe import MoE
 from sglang.test.numerical_tests.test_module import TestModule
@@ -34,7 +33,6 @@ MoE_configs = [
 # MoE Implementation
 MoE_modules = [
     FusedMoE,
-    EPMoE,
 ]
 # Define the real weight prefixes in the model checkpoint for the MoE tests
 weight_prefixes = [
