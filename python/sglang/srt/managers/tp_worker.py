@@ -241,9 +241,6 @@ class TpModelWorker:
             )
 
         if self.pp_group.is_last_rank:
-            # logits_output, can_run_cuda_graph = self.model_runner.forward(
-            #     forward_batch, pp_proxy_tensors=pp_proxy_tensors
-            # )
             logits_output, can_run_cuda_graph = self.run_batch_generation(
                 forward_batch,
                 pp_proxy_tensors=pp_proxy_tensors,
@@ -260,11 +257,7 @@ class TpModelWorker:
 
             return logits_output, next_token_ids, can_run_cuda_graph
         else:
-            # pp_proxy_tensors, can_run_cuda_graph = self.model_runner.forward(
-            #     forward_batch,
-            #     pp_proxy_tensors=pp_proxy_tensors,
-            # )
-            logits_output, can_run_cuda_graph = self.run_batch_generation(
+            pp_proxy_tensors, can_run_cuda_graph = self.run_batch_generation(
                 forward_batch,
                 pp_proxy_tensors=pp_proxy_tensors,
             )
