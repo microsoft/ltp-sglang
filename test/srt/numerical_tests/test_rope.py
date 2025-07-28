@@ -5,8 +5,8 @@ import pytest
 import torch
 
 from sglang.srt.layers.rotary_embedding import get_rope
-from sglang.test.numerical_tests.common import *
 from sglang.test.numerical_tests.test_module import TestModule
+from sglang.test.numerical_tests.utils.common import *
 
 # Define the configurations for the Rotary Embedding tests
 ROPE_configs = [

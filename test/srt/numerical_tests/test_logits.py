@@ -7,12 +7,12 @@ from torch import nn
 
 from sglang.srt.layers.logits_processor import LogitsMetadata
 from sglang.srt.model_executor.forward_batch_info import ForwardMode
-from sglang.test.numerical_tests.common import *
 from sglang.test.numerical_tests.modules.test_logits import (
     LogitsModule,
     MockLogitsConfig,
 )
 from sglang.test.numerical_tests.test_module import TestModule
+from sglang.test.numerical_tests.utils.common import *
 from sglang.test.numerical_tests.utils.load_data import (
     load_random_weights,
     load_weight_from_hf_ckp,

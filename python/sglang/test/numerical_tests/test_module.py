@@ -11,8 +11,8 @@ from sglang.srt.distributed.parallel_state import (
     initialize_model_parallel,
 )
 from sglang.srt.utils import set_random_seed
-from sglang.test.numerical_tests.common import *
-from sglang.test.numerical_tests.utils.tensor_checker import compare_tensors
+from sglang.test.numerical_tests.utils.check_tensor import compare_tensors
+from sglang.test.numerical_tests.utils.common import *
 
 
 class TestModule:
