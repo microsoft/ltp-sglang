@@ -1,19 +1,12 @@
-import sys
 import uuid
 from operator import pos
 
 import pytest
 import torch
-from torch import nn
 
 from sglang.srt.layers.rotary_embedding import get_rope
 from sglang.test.numerical_tests.common import *
 from sglang.test.numerical_tests.test_module import TestModule
-from sglang.test.numerical_tests.utils.load_data import (
-    load_random_weights,
-    load_weight_from_hf_ckp,
-)
-from sglang.test.numerical_tests.utils.tensor_checker import *
 
 # Define the configurations for the Rotary Embedding tests
 ROPE_configs = [

@@ -95,10 +95,11 @@ def load_weight_from_hf_ckp(
                     )
                     param = dict(sgl_module.named_parameters())[field_name]
                     param.data = f.get_tensor(key)
+                    print(f"Loaded {field_name} from {file_name}")
                 else:
                     raise ValueError(f"Weight {key} not found in {file_name}")
     # Move the module to the specified dtype and GPU
     sgl_module = sgl_module.to(dtype=dtype).cuda()
     sgl_module.eval()
-
+    print(f"Module {sgl_module} loaded with weights from {ckp_path}")
     return sgl_module

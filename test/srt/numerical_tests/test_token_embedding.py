@@ -12,7 +12,6 @@ from sglang.test.numerical_tests.utils.load_data import (
     load_random_weights,
     load_weight_from_hf_ckp,
 )
-from sglang.test.numerical_tests.utils.tensor_checker import *
 
 # Define the configurations for the Token Embedding tests
 Embedding_configs = [

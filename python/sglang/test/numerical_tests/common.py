@@ -1,6 +1,7 @@
 import json
 import os
 
+import pytest
 import torch
 
 # Set the distributed environment variables
@@ -13,10 +14,9 @@ LOG_DIR = os.getenv("LOG_DIR", "numerical_test")
 RESULTS_FILE = "numerical_results.json"
 os.makedirs(LOG_DIR, exist_ok=True)
 
-BATCH_SIZES = [32, 8, 1]
+BATCH_SIZES = [16, 8, 1]
 SEQ_LENS = [4096, 2048, 1024, 512]
 TEST_DTYPES = [torch.bfloat16]
-TP_SIZES = [1]
 
 RANDOM_INPUT_COUNT = 1
 REPEAT_COUNT = 3

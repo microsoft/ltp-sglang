@@ -37,7 +37,6 @@ class TestModule:
     def setup_parallelism(self):
         initialize_model_parallel(
             tensor_model_parallel_size=1,
-            pipeline_model_parallel_size=1,
         )
 
     def setup_random_seed(self):

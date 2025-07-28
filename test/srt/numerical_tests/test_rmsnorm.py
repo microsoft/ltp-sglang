@@ -22,7 +22,8 @@ weight_prefixes = [
     "model.layers.20.post_attention_layernorm",
     "model.layers.40.self_attn.q_layernorm",
     "model.layers.60.self_attn.k_layernorm",
-    "model.norm" "random0",
+    "model.norm",
+    "random0",
     "random1",
     "random2",
     "random3",
@@ -38,6 +39,9 @@ class TestRMSNorm(TestModule):
     def test_sglang_rmsnorm(self, module_config, weight_prefix, dtype):
         """Test RMSNorm with random input."""
         # Init RMSNorm with the given configuration
+        print(
+            f"Testing RMSNorm with weights: {module_config=} {weight_prefix=} {dtype=}"
+        )
         rmsnorm = RMSNorm(module_config["hidden_size"], module_config["rms_norm_eps"])
         if weight_prefix.count("random") == 0:
             # Load weights from a checkpoint if not a random prefix
@@ -45,7 +49,7 @@ class TestRMSNorm(TestModule):
         else:
             # Load random weights for the RMSNorm layer
             load_random_weights(rmsnorm, dtype)
-
+        print(f"RMSNorm weights loaded: {rmsnorm}")
         log_dir = os.path.join(
             LOG_DIR,
             "rmsnorm",
