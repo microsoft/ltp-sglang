@@ -252,7 +252,7 @@ class MemCounter(BaseCounter):
         
     
     def _mla_attention(self, seq_len: int, cache_len: int, num_attention_heads: int, qk_rope_head_dim: int,
-                       qk_nope_head_dim: int, kv_lora_rank: int) -> int:
+                       qk_nope_head_dim: int, kv_lora_rank: int) -> float:
         """Get attention dimension for MLA - to be overridden by subclasses."""
         raise NotImplementedError("Subclasses must implement this method")
 
@@ -280,7 +280,7 @@ class PrefillMemCounter(MemCounter):
         return self.tensor_size(kv_proj_tensors)
     
     def _mla_attention(self, seq_len: int, cache_len: int, num_attention_heads: int, qk_rope_head_dim: int,
-                       qk_nope_head_dim: int, kv_lora_rank: int) -> int:
+                       qk_nope_head_dim: int, kv_lora_rank: int) -> float:
         """Get attention dimension for MLA in prefill phase."""
         attn = [
             ([seq_len, num_attention_heads * (qk_rope_head_dim + qk_nope_head_dim)], ATTN_PRECISION),  # Q

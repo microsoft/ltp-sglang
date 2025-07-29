@@ -70,7 +70,8 @@ class ModelConfig:
             quant_method = config_dict['quantization_config'].get('quant_method', None)
             result['precision'] = quant_method if quant_method else "fp16"
             result['precision_bytes'] = PRECISION_TO_BYTES.get(result['precision'], 2)
-            result['quantization_block_size'] = config_dict['quantization_config'].get('weight_block_size')[0]
+            weight_block_size = config_dict['quantization_config'].get('weight_block_size')
+            result['quantization_block_size'] = weight_block_size[0] if weight_block_size else 1
             
         if missing_required:
             raise ValueError(f"Missing required fields in config: {', '.join(missing_required)}")
