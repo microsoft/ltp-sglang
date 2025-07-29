@@ -18,7 +18,6 @@ class ModelConfig:
     num_attention_heads: int
     intermediate_size: int
     head_dim: int
-    intermediate_size: int
     num_experts: int
     num_experts_per_tok: int
     moe_intermediate_size: int
@@ -79,4 +78,4 @@ class ModelConfig:
         with open(file_path, "r") as f:
             config_dict = json.load(f)
         obj = cls.from_dict(config_dict)
-        return obj.name, obj
+        return obj

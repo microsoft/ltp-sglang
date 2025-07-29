@@ -1,7 +1,8 @@
 import argparse
+import csv
 from model_config import ModelConfig
 from counter_registry import CounterRegistry
-import csv
+
 
 def main():
     parser = argparse.ArgumentParser(description="Model Info Tool")
@@ -15,12 +16,12 @@ def main():
     
     models_info = {}
     for config_path in args.config.split(','):
-        name, config = ModelConfig.from_json_file(config_path)
-        models_info[name] = {}
+        config = ModelConfig.from_json_file(config_path)
+        models_info[config.name] = {}
         for counter_name in counter_names:
             try:
                 counter = CounterRegistry.get_counter(counter_name)
-                models_info[name][counter.metric_name] = counter.get_model_results(seq_len, config)
+                models_info[config.name][counter.metric_name] = counter.get_model_results(seq_len, config)
             except (ValueError, IndexError) as e:
                 print(f"Warning: {e}")
                 continue

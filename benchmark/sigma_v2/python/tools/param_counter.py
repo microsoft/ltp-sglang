@@ -17,13 +17,13 @@ class ParamCounter(BaseCounter):
 
     def gateup_mlp(self, hidden_size: int, intermediate_size: int, **kwargs) -> int:
         """Calculate the number of parameters in gate-up MLP."""
-        return hidden_size * intermediate_size * 2 + intermediate_size * hidden_size  # up proj + down proj
+        return hidden_size * intermediate_size * 2 + intermediate_size * hidden_size  # gateup proj + down proj
 
     def moe(self, hidden_size: int, moe_intermediate_size: int, num_experts: int, n_shared_experts: int = 0, **kwargs) -> int:
         """Calculate the number of parameters in MoE layer."""
         return (
             hidden_size * num_experts  # gate
-            + (num_experts + n_shared_experts) * hidden_size * moe_intermediate_size * 2  # up proj
+            + (num_experts + n_shared_experts) * hidden_size * moe_intermediate_size * 2  # gateup proj
             + (num_experts + n_shared_experts) * hidden_size * moe_intermediate_size  # down proj
         )
 
