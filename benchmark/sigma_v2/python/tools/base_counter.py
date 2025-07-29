@@ -91,6 +91,7 @@ class BaseCounter(ABC):
                 model_config.moe_intermediate_size,
                 model_config.num_experts,
                 n_shared_experts=model_config.n_shared_experts,
+                num_experts_per_tok=model_config.num_experts_per_tok,
                 seq_len=seq_len
             ) * (model_config.total_num_layers - model_config.total_dense_layers)
         

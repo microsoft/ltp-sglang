@@ -8,7 +8,7 @@ def main():
     parser = argparse.ArgumentParser(description="Model Info Tool")
     parser.add_argument("--config", type=str, default="../../model_conf/qwen/config.json,../../model_conf/deepseek/config.json", help="Path to the model configuration file")
     parser.add_argument("--seq_len", type=int, default=1024, help="Sequence length for the model")
-    parser.add_argument("--counters", type=str, default="param", help="Comma-separated list of counters to use")
+    parser.add_argument("--counters", type=str, default="param,prefill_flop,decode_flop", help="Comma-separated list of counters to use")
     args = parser.parse_args()
     
     seq_len = args.seq_len
