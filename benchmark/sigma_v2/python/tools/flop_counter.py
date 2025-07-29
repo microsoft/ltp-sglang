@@ -170,7 +170,6 @@ class DecodeFlopCounter(FlopCounter):
     def _mla_kv_proj(self, seq_len: int, kv_lora_rank: int, num_attention_heads: int,
                     head_dim: int, qk_nope_head_dim: int) -> float:
         """Calculate FLOPs for MLA KV projection in decode phase."""
-        # In decode phase, KV projection has two identical operations
         flops = self.gemm_flops(seq_len, num_attention_heads, kv_lora_rank * qk_nope_head_dim)
         flops += self.gemm_flops(seq_len, num_attention_heads, kv_lora_rank * head_dim)
         return flops
