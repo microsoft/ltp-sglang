@@ -320,7 +320,7 @@ class DecodeMemCounter(MemCounter):
         return self.tensor_size(q_nope_tensors) + self.tensor_size(bmm_tensors)
     
     def _mla_attention(self, seq_len: int, cache_len: int, num_attention_heads: int, qk_rope_head_dim: int,
-                       qk_nope_head_dim: int, kv_lora_rank: int) -> int:
+                       qk_nope_head_dim: int, kv_lora_rank: int) -> float:
         """Get attention dimension for MLA in decode phase."""
         attn = [
             ([seq_len, num_attention_heads * (kv_lora_rank + qk_rope_head_dim)], ATTN_PRECISION),  # Q
