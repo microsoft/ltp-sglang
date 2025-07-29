@@ -8,7 +8,7 @@ def main():
     parser = argparse.ArgumentParser(description="Model Info Tool")
     parser.add_argument("--config", type=str, default="../../model_conf/qwen/config.json,../../model_conf/deepseek/config.json", help="Path to the model configuration file")
     parser.add_argument("--seq_len", type=int, default=1024, help="Sequence length for the model")
-    parser.add_argument("--counters", type=str, default="param", help="Comma-separated list of counters to use")
+    parser.add_argument("--counters", type=str, default="param,prefill_mem,decode_mem", help="Comma-separated list of counters to use")
     args = parser.parse_args()
     
     seq_len = args.seq_len
@@ -20,7 +20,10 @@ def main():
         models_info[config.name] = {}
         for counter_name in counter_names:
             try:
-                counter = CounterRegistry.get_counter(counter_name)
+                if 'mem' in counter_name:
+                    counter = CounterRegistry.get_counter(counter_name, precision_bytes=config.precision_bytes, quantization_block_size=config.quantization_block_size)
+                else:
+                    counter = CounterRegistry.get_counter(counter_name)
                 models_info[config.name][counter.metric_name] = counter.get_model_results(seq_len, config)
             except (ValueError, IndexError) as e:
                 print(f"Warning: {e}")

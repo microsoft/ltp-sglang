@@ -23,6 +23,9 @@ class ModelConfig:
     moe_intermediate_size: int
     
     precision: Optional[str] = "fp16"
+    precision_bytes: Optional[int] = 2
+    
+    quantization_block_size: Optional[int] = 1
     
     num_key_value_heads: Optional[int] = None
     total_dense_layers: Optional[int] = 0
@@ -66,7 +69,9 @@ class ModelConfig:
         if  'quantization_config' in config_dict:
             quant_method = config_dict['quantization_config'].get('quant_method', None)
             result['precision'] = quant_method if quant_method else "fp16"
-        
+            result['precision_bytes'] = PRECISION_TO_BYTES.get(result['precision'], 2)
+            result['quantization_block_size'] = config_dict['quantization_config'].get('weight_block_size')[0]
+            
         if missing_required:
             raise ValueError(f"Missing required fields in config: {', '.join(missing_required)}")
         if not result['name'] in SUPPORTED_MODELS:
