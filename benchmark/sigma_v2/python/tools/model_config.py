@@ -7,7 +7,7 @@ PRECISION_TO_BYTES = {
     "fp8": 1
 }
 
-SUPPORTED_MODELS = []
+SUPPORTED_MODELS = ['qwen3_moe', 'deepseek_v3', 'sigma']
 
 @dataclass
 class ModelConfig:
@@ -70,6 +70,8 @@ class ModelConfig:
         
         if missing_required:
             raise ValueError(f"Missing required fields in config: {', '.join(missing_required)}")
+        if not result['name'] in SUPPORTED_MODELS:
+            raise ValueError(f"Unsupported model type: {result['name']}. Supported models are: {', '.join(SUPPORTED_MODELS)}")
         return cls(**result)
     
     @classmethod
