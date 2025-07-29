@@ -33,4 +33,4 @@ class CounterRegistry:
 # Register default counters
 CounterRegistry.register("param", ParamCounter)
 CounterRegistry.register("prefill_flop", PrefillFlopCounter)
-CounterRegistry.register("decode_flop", DecodeFlopCounter)  
+CounterRegistry.register("decode_flop", DecodeFlopCounter)

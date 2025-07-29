@@ -5,7 +5,7 @@ from base_counter import BaseCounter
 DEFAULT_SEQ_LEN = 1024
 
 class FlopCounter(BaseCounter):
-    """Base counter for FLOP (Floating Point Operations) calculations. Support MHA, GQA, MLAwith LoRA """
+    """Base counter for FLOP (Floating Point Operations) calculations. Support MHA, GQA, MLA with LoRA """
     
     @staticmethod
     def gemm_flops(m: int, n: int, k: int) -> float:
