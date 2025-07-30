@@ -57,6 +57,7 @@ class TestRoPE(TestModule):
         )
         os.makedirs(log_dir, exist_ok=True)
 
+        # Define the forward function for the RoPE module
         def forward_func(inputs) -> torch.Tensor:
             """Forward function for the RoPE module."""
             positions, q, k = inputs
@@ -67,15 +68,16 @@ class TestRoPE(TestModule):
             # merge the results
             return torch.cat((q_res, v_res), dim=-1)
 
+        # Define the random input function for RoPE
         def random_input_method(bs, sl, dtype):
             """Generate random input tensor for RoPE."""
             positions = torch.arange(sl, dtype=torch.int64).cuda()
             q = torch.randn(
-                (sl, rope_config["head_dim"], rope_config["num_attention_heads"]),
+                (sl, rope_config["num_attention_heads"], rope_config["head_dim"]),
                 dtype=dtype,
             ).cuda()
             k = torch.randn(
-                (sl, rope_config["head_dim"], rope_config["num_attention_heads"]),
+                (sl, rope_config["num_attention_heads"], rope_config["head_dim"]),
                 dtype=dtype,
             ).cuda()
             return positions, q, k
