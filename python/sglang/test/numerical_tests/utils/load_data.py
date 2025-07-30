@@ -169,8 +169,6 @@ def load_module(sgl_module: nn.Module, data_folder, dtype=torch.bfloat16):
     sgl_module.eval()
     return sgl_module
 
-    return sgl_module
-
 
 def load_all_input_output(data_folder):
     """Load all input and output tensors from the benchmark folder."""

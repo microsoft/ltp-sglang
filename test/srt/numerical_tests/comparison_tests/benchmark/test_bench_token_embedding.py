@@ -18,7 +18,7 @@ Embedding_configs = [
         "hidden_size": 5120,
     }
 ]
-weight_prefixs = [
+weight_prefixes = [
     "model.embed_tokens",
     "random0",
     "random1",

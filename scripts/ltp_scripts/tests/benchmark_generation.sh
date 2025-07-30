@@ -1,7 +1,7 @@
 # !/bin/bash
 
-# Consistency test script for SGLang
-# This script runs a series of tests to ensure that the SGLang module behaves consistently in the same environment.
+# Benchmark generation script for numerical tests
+# This script generates benchmark datasets for numerical comparison between SGLang and Transformers implementations.
 
 REAL_WEIGHTS_PATH=$1
 if [ -z "$REAL_WEIGHTS_PATH" ]; then
@@ -15,6 +15,6 @@ mkdir -p "$LOG_DIR"
 export CHECKPOINT_PATH="$REAL_WEIGHTS_PATH"
 export LOG_DIR="$LOG_DIR"
 
-# Run the consistency test
+# Run the benchmark generation test
 script_dir=$(dirname "$0")
 pytest -s "$script_dir/../../../test/srt/numerical_tests/comparison_tests/benchmark"
