@@ -8,7 +8,7 @@ if [ -z "$REAL_WEIGHTS_PATH" ]; then
     echo "Usage: $0 <real_weights_path> [log_dir]"
     exit 1
 fi
-LOG_DIR=${2:-"consistency_test"}
+LOG_DIR=${2:-"benchmark"}
 mkdir -p "$LOG_DIR"
 
 # Set environment variables for the test
@@ -17,4 +17,4 @@ export LOG_DIR="$LOG_DIR"
 
 # Run the consistency test
 script_dir=$(dirname "$0")
-pytest -s "$script_dir/../../../test/srt/numerical_tests/consistency_tests"
+pytest -s "$script_dir/../../../test/srt/numerical_tests/comparison_tests/benchmark"
