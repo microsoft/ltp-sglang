@@ -247,6 +247,8 @@ class ServerArgs:
     custom_weight_loader: Optional[List[str]] = None
     weight_loader_disable_mmap: bool = False
 
+    enforce_batching: bool = False
+    
     def __post_init__(self):
         # Expert parallelism
         if self.enable_ep_moe:
@@ -1679,6 +1681,11 @@ class ServerArgs:
             "--weight-loader-disable-mmap",
             action="store_true",
             help="Disable mmap while loading weight using safetensors.",
+        )
+        parser.add_argument(
+            "--enforce-batching",
+            action="store_true",
+            help="Enforce batching for tokenizer requests.",
         )
 
     @classmethod
