@@ -1,9 +1,5 @@
-import sys
-import uuid
-
 import pytest
 import torch
-from torch import nn
 
 from sglang.srt.layers.logits_processor import LogitsMetadata
 from sglang.srt.model_executor.forward_batch_info import ForwardMode
@@ -71,7 +67,7 @@ class TestLogits(TestModule):
             logit_metadata = LogitsMetadata(
                 forward_mode=ForwardMode.EXTEND,
                 extend_return_logprob=False,
-                extend_seq_lens=torch.tensor([sl], dtype=torch.int64).cuda(),
+                extend_seq_lens=torch.tensor([sl], dtype=torch.int64).cuda().repeat(bs),
             )
             return tensor, logit_metadata
 

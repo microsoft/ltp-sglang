@@ -12,6 +12,7 @@ ROPE_configs = [
     {
         "head_dim": 128,
         "num_attention_heads": 64,
+        "num_key_value_heads": 8,
         "max_position_embeddings": 4096,
         "rope_theta": 10000,
         "rope_scaling": {
@@ -73,11 +74,11 @@ class TestRoPE(TestModule):
             """Generate random input tensor for RoPE."""
             positions = torch.arange(sl, dtype=torch.int64).cuda()
             q = torch.randn(
-                (sl, rope_config["num_attention_heads"], rope_config["head_dim"]),
+                (sl, rope_config["num_attention_heads"] * rope_config["head_dim"]),
                 dtype=dtype,
             ).cuda()
             k = torch.randn(
-                (sl, rope_config["num_attention_heads"], rope_config["head_dim"]),
+                (sl, rope_config["num_key_value_heads"] * rope_config["head_dim"]),
                 dtype=dtype,
             ).cuda()
             return positions, q, k
