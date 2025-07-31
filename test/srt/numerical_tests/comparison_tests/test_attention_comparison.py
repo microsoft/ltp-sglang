@@ -64,22 +64,22 @@ class TestAttentionComparison(CompareModule):
                 batch_size=trace_metadata.batch_size,
                 seq_len=trace_metadata.seq_len,
             )
-            # Clone the input tensor for avoiding in-place operations
-            input_tensor_clone = (
-                inputs["hidden_states"].clone().view(-1, sgl_module.hidden_size).cuda()
+            # Reshape the input tensor for the SGLang module
+            input_tensor = (
+                inputs["hidden_states"].view(-1, sgl_module.hidden_size).cuda()
             )
 
             positions = (
                 torch.arange(
                     trace_metadata.seq_len,
                     dtype=torch.int64,
-                    device=input_tensor_clone.device,
+                    device=input_tensor.device,
                 )
                 .repeat(trace_metadata.batch_size, 1)
                 .unsqueeze(0)
             )
             # Forward the module
-            output = module_tester.forward(positions, input_tensor_clone)
+            output = module_tester.forward(positions, input_tensor)
             # Reshape it to the match the expected output shape
             return output.view(
                 trace_metadata.batch_size,

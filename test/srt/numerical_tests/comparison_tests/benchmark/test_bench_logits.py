@@ -67,6 +67,8 @@ class TestBenchLogits(BenchModule):
             """Forward function for the Logits layer."""
             hidden_states = inputs["hidden_states"]
             logits_output = logits_module(hidden_states)
+            # Only return the last token logits
+            logits_output = logits_output[:, -1, :]
             return logits_output
 
         # Create a BenchConfig instance for the Logits module
@@ -83,5 +85,9 @@ class TestBenchLogits(BenchModule):
 
         # Run the Logits module with random input and trace tensors
         self._run_module_random_input(
-            logits_module, bench_config, forward_func, random_input_func, log_dir
+            logits_module,
+            bench_config,
+            forward_func,
+            random_input_func,
+            log_dir,
         )

@@ -63,6 +63,10 @@ class TestLogits(TestModule):
             input_tensor, logits_metadata = inputs
             input_tensor_clone = input_tensor.clone()
             logits_res = logits_module(input_tensor_clone, logits_metadata)
+            print(
+                f"        Logits input shape: {input_tensor_clone.shape}, "
+                f"output shape: {logits_res.next_token_logits.shape}"
+            )
             return logits_res.next_token_logits
 
         def random_input_func(bs, sl, dtype):
@@ -71,7 +75,7 @@ class TestLogits(TestModule):
             logit_metadata = LogitsMetadata(
                 forward_mode=ForwardMode.EXTEND,
                 extend_return_logprob=False,
-                extend_seq_lens=torch.tensor([sl], dtype=torch.int64).cuda(),
+                extend_seq_lens=torch.tensor([sl], dtype=torch.int64).cuda().repeat(bs),
             )
             return tensor, logit_metadata
 

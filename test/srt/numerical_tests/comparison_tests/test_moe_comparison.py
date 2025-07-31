@@ -31,15 +31,14 @@ class TestMoEComparison(CompareModule):
 
         def module_forward_func(sgl_module, inputs, trace_metadata):
             """Forward function for the MoE module."""
-            # Clone the input tensor for avoiding in-place operations
-            input_tensor_clone = (
+            # Reshape the input tensor for the SGLang module
+            input_tensor = (
                 inputs["hidden_states"]
-                .clone()
                 .view(-1, sgl_module.config["hidden_size"])
                 .cuda()
             )
             # Forward the module
-            output = sgl_module(input_tensor_clone)
+            output = sgl_module(input_tensor)
             # Reshape it to the match the expected output shape
             return output.view(
                 trace_metadata.batch_size,

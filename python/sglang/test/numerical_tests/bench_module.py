@@ -151,8 +151,7 @@ class BenchModule:
                 data_folder = os.path.join(log_dir, f"random_input_{bs=}_{sl=}")
                 os.makedirs(data_folder, exist_ok=True)
 
-                # {id => {input: {name: file}, output: [output_file]}}
-                traced_tensors = {}
+                # Initialize trace metadata
                 trace_meta_data = TraceMetadata(batch_size=bs, seq_len=sl)
 
                 for _ in range(test_config.input_count):

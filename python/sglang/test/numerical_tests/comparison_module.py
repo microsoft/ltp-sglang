@@ -56,6 +56,7 @@ class CompareModule:
         dtype=torch.bfloat16,
         bench_dir=BENCHMARK_FOLDER,
         log_dir=LOG_DIR,
+        module_prefix="",
     ):
         bench_folders = find_all_benchmark_folders(bench_dir)
         all_results = {}
@@ -64,14 +65,16 @@ class CompareModule:
             bench_config = BenchConfig(**bench_config)
             sgl_module = module_init_func(bench_config.module_config)
 
-            sgl_module = load_module(sgl_module, sub_folder, dtype=dtype)
+            sgl_module = load_module(
+                sgl_module, sub_folder, dtype=dtype, module_prefix=module_prefix
+            )
             print(
                 f"Testing {sgl_module.__class__.__name__} in {sub_folder} with config: {bench_config.module_config}"
             )
             compare_results = {}
             for tensors_info_dict, tensor_folder in load_all_input_output(sub_folder):
                 # In each tensor folder, the input tensors have the same shape and type
-                print(f"Loaded tensors from {tensor_folder}: {tensors_info_dict}")
+                print(f"Loaded tensors from {tensor_folder}")
                 trace_metadata = TraceMetadata.from_dict(tensors_info_dict)
                 tensor_folder_name = os.path.basename(tensor_folder)
 
@@ -84,14 +87,9 @@ class CompareModule:
                     # Record the output tensors from the sglang module
                     sglang_output_tensors = []
                     for _ in range(REPEAT_COUNT):
-                        # Forward pass with the input tensors
-                        print(
-                            f"Running forward pass with inputs: {input_tensor_names.keys()}"
-                        )
+                        # Load the input tensors for the current trace group
                         inputs = {
-                            name: torch.load(os.path.join(tensor_folder, file))
-                            .to(dtype)
-                            .cuda()
+                            name: torch.load(os.path.join(tensor_folder, file)).cuda()
                             for name, file in input_tensor_names.items()
                         }
                         # Forward pass with the input tensors
