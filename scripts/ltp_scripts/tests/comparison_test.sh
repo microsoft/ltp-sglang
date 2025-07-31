@@ -1,4 +1,4 @@
-# !/bin/bash
+#!/bin/bash
 # This script is used to run the comparison test based on the provided Benchmark dataset.
 
 # Usage: ./comparison_test.sh <dataset_path> <output_path>
