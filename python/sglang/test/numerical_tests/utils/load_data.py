@@ -105,7 +105,6 @@ def load_weight_from_hf_ckp(
     # Move the module to the specified dtype and GPU
     module = module.to(dtype=dtype).cuda()
     module.eval()
-    print(f"Module {module} loaded with weights from {ckp_path}")
     return module
 
 
@@ -136,7 +135,9 @@ def find_all_benchmark_folders(base_folder):
     return benchmark_folders
 
 
-def load_module(sgl_module: nn.Module, data_folder, dtype=torch.bfloat16):
+def load_module(
+    sgl_module: nn.Module, data_folder, dtype=torch.bfloat16, module_prefix=""
+):
     """Load weights from a benchmark folder."""
 
     weight_path = os.path.join(data_folder, WEIGHTS_FILE)
@@ -149,6 +150,7 @@ def load_module(sgl_module: nn.Module, data_folder, dtype=torch.bfloat16):
         weights = []
         with safe_open(weight_path, framework="pt", device="cpu") as f:
             for key in f.keys():
+                key = f"{module_prefix}.{key}" if module_prefix else key
                 weights.append((key, f.get_tensor(key)))
         sgl_module.load_weights(weights)
         # Set the module to evaluation mode
@@ -157,12 +159,11 @@ def load_module(sgl_module: nn.Module, data_folder, dtype=torch.bfloat16):
 
     with safe_open(weight_path, framework="pt", device="cpu") as f:
         for name, param in sgl_module.named_parameters():
+            name = name.replace(f"{module_prefix}.", "") if module_prefix else name
             if name in f.keys():
                 param.data = f.get_tensor(name)
-                print(f"Loaded {name} from {weight_path}")
             else:
-                # raise KeyError(f"Weight {name} not found in {weight_path}")
-                print(f"Weight {name} not found in {weight_path}")
+                raise KeyError(f"Weight {name} not found in {weight_path}")
 
     sgl_module = sgl_module.to(dtype=dtype).cuda()
     # Set the module to evaluation mode

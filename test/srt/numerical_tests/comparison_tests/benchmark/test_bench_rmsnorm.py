@@ -16,8 +16,7 @@ RMSNorm_configs = [{"hidden_size": 5120, "rms_norm_eps": 1e-6}]
 weight_prefixes = [
     "model.layers.0.input_layernorm",
     "model.layers.20.post_attention_layernorm",
-    "model.layers.40.self_attn.q_layernorm",
-    "model.layers.60.self_attn.k_layernorm",
+    "model.layers.40.input_layernorm",
     "model.norm",
     "random0",
     "random1",
