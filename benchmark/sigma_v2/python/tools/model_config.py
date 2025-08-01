@@ -4,6 +4,7 @@ from typing import Optional, Dict, Any
 
 PRECISION_TO_BYTES = {
     "fp16": 2,
+    "bf16": 2,
     "fp8": 1
 }
 
@@ -65,7 +66,7 @@ class ModelConfig:
                     missing_required.append(field_name)
         if  'quantization_config' in config_dict:
             quant_method = config_dict['quantization_config'].get('quant_method', None)
-            result['precision'] = quant_method if quant_method else "fp16"
+            result['precision'] = quant_method if quant_method else "bf16"
         
         if missing_required:
             raise ValueError(f"Missing required fields in config: {', '.join(missing_required)}")
