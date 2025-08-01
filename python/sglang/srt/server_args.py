@@ -249,6 +249,8 @@ class ServerArgs:
 
     # For warmup and benchmark 
     enable_benchmark: bool = False
+    benchmark_num_warmup: int = 50
+    benchmark_num_iters: int = 50
     
     def __post_init__(self):
         # Expert parallelism
@@ -1687,6 +1689,18 @@ class ServerArgs:
             "--enable-benchmark",
             action="store_true",
             help="Enable benchmark mode, which will run multiple times of the same input to obtain stable results.",
+        )
+        parser.add_argument(
+            "--benchmark-num-warmup",
+            type=int,
+            default=ServerArgs.benchmark_num_warmup,
+            help="Number of warmup iterations for benchmarking.",
+        )
+        parser.add_argument(
+            "--benchmark-num-iters",
+            type=int,
+            default=ServerArgs.benchmark_num_iters,
+            help="Number of iterations for benchmarking.",
         )
 
     @classmethod

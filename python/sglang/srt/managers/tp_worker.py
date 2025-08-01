@@ -202,10 +202,12 @@ class TpModelWorker:
         """Run batch generation."""
         benchmark_mode = global_server_args_dict.get("enable_benchmark", False)
         if benchmark_mode:
+            warmup_steps = global_server_args_dict.get("benchmark_num_warmup", WARMUP_STEPS)
+            run_steps = global_server_args_dict.get("benchmark_num_iters", RUN_STEPS)
             start = torch.cuda.Event(enable_timing=True)
             end = torch.cuda.Event(enable_timing=True)
-            for i in range(WARMUP_STEPS + RUN_STEPS):
-                if i == WARMUP_STEPS:
+            for i in range(warmup_steps + run_steps):
+                if i == warmup_steps:
                     start.record()
                 logits_output, can_run_cuda_graph = self.model_runner.forward(forward_batch, pp_proxy_tensors=pp_proxy_tensors)
             end.record()
