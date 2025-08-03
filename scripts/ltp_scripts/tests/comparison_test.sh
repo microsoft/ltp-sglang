@@ -23,9 +23,9 @@ run_comparison_test() {
     BENCHMARK_FOLDER="$dataset_path/$module_name" LOG_DIR=$output_path pytest -s "$test_path/test_${module_name}_comparison.py"
 }
 
-# run_comparison_test "attention"
-# run_comparison_test "moe"
-# run_comparison_test "logits"
-# run_comparison_test "rmsnorm"
-# run_comparison_test "rope"
+run_comparison_test "attention"
+run_comparison_test "moe"
+run_comparison_test "logits"
+run_comparison_test "rmsnorm"
+run_comparison_test "rope"
 run_comparison_test "token_embedding"

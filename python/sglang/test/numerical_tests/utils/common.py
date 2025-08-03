@@ -21,10 +21,10 @@ TRACED_TENSORS_FILE = "traced_tensors.json"
 COMPARE_RESULTS_FILE = "compare_results.json"
 
 # Define constants for batch sizes, sequence lengths, and data types
-# BATCH_SIZES = [16, 8, 1]
-# SEQ_LENS = [4096, 2048, 1024, 512]
-BATCH_SIZES = [8, 1]
-SEQ_LENS = [512]
+BATCH_SIZES = [16, 8, 1]
+SEQ_LENS = [4096, 2048, 1024, 512]
+# BATCH_SIZES = [8, 1]
+# SEQ_LENS = [512]
 TEST_DTYPES = [torch.bfloat16]
 # Define the target data type for comparison tests
 TARGET_DTYPE = torch.bfloat16
