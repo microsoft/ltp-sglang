@@ -30,7 +30,7 @@ class TestBenchRoPE(BenchModule):
         """Run the sglang RoPE with random input and trace tensors."""
         # Initialize the Rotary Embedding module with the given configurations
         rope_module = RotaryEmbedding(rope_config)
-        rope_module.to(TARGET_DTYPE).cuda()
+        rope_module.cuda()
 
         # Create a directory for tracing tensors
         log_dir = os.path.join(

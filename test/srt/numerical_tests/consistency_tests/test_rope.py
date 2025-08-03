@@ -15,15 +15,7 @@ ROPE_configs = [
         "num_key_value_heads": 8,
         "max_position_embeddings": 4096,
         "rope_theta": 10000,
-        "rope_scaling": {
-            "beta_fast": 32,
-            "beta_slow": 1,
-            "factor": 40,
-            "mscale": 0.707,
-            "mscale_all_dim": 0.707,
-            "original_max_position_embeddings": 4096,
-            "type": "yarn",
-        },
+        "rope_scaling": None,
     }
 ]
 
@@ -45,7 +37,7 @@ class TestRoPE(TestModule):
             base=rope_config["rope_theta"],
             rope_scaling=rope_config["rope_scaling"],
         )
-        rope_module = rope_module.to(dtype=dtype).cuda()
+        rope_module = rope_module.cuda()
         rope_module.eval()
 
         print(f"Testing RoPE with weights: {rope_config=} " f" {dtype=}")
