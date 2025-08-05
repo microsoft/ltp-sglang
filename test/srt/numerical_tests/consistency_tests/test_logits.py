@@ -3,7 +3,7 @@ import torch
 
 from sglang.srt.layers.logits_processor import LogitsMetadata
 from sglang.srt.model_executor.forward_batch_info import ForwardMode
-from sglang.test.numerical_tests.modules.test_logits import (
+from sglang.test.numerical_tests.modules.sglang.test_logits import (
     LogitsModule,
     MockLogitsConfig,
 )
@@ -13,13 +13,7 @@ from sglang.test.numerical_tests.utils.load_data import (
     load_random_weights,
     load_weight_from_hf_ckp,
 )
-
-Logits_configs = [
-    MockLogitsConfig(
-        vocab_size=200064,
-        hidden_size=5120,
-    )
-]
+from sglang.test.numerical_tests.utils.module_config import MODULE_CONFIGS
 
 weight_prefixes = ["", "random0", "random1", "random2", "random3"]
 
@@ -29,7 +23,7 @@ class TestLogits(TestModule):
     Test the consistency of Logits Layer computation across different implementations.
     """
 
-    @pytest.mark.parametrize("logits_config", Logits_configs)
+    @pytest.mark.parametrize("logits_config", MODULE_CONFIGS)
     @pytest.mark.parametrize("weight_prefix", weight_prefixes)
     @pytest.mark.parametrize("dtype", TEST_DTYPES)
     def test_sglang_logits(
@@ -37,7 +31,11 @@ class TestLogits(TestModule):
     ):
         """Test the Logits layer."""
         # Initialize the Logits module
-        logits_module = LogitsModule(logits_config)
+        mock_config = MockLogitsConfig(
+            vocab_size=logits_config["vocab_size"],
+            hidden_size=logits_config["hidden_size"],
+        )
+        logits_module = LogitsModule(mock_config)
         if weight_prefix.count("random") > 0:
             # Load random weights
             load_random_weights(logits_module, dtype=dtype)

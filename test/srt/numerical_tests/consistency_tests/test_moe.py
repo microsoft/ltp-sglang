@@ -6,30 +6,15 @@ import torch
 from torch import nn
 
 from sglang.srt.layers.moe.fused_moe_triton import FusedMoE
-from sglang.test.numerical_tests.modules.test_moe import MoE
+from sglang.test.numerical_tests.modules.sglang.test_moe import MoE
 from sglang.test.numerical_tests.test_module import TestModule
 from sglang.test.numerical_tests.utils.common import *
 from sglang.test.numerical_tests.utils.load_data import (
     load_random_weights,
     load_weight_from_hf_ckp,
 )
+from sglang.test.numerical_tests.utils.module_config import MODULE_CONFIGS
 
-# Define the configurations for the MoE tests
-MoE_configs = [
-    {
-        "num_experts_per_tok": 8,
-        "n_routed_experts": 96,
-        "routed_scaling_factor": 1.0,
-        "scoring_func": "sigmoid",
-        "seq_aux": True,
-        "topk_method": "noaux_tc",
-        "norm_topk_prob": True,
-        "hidden_size": 5120,
-        "moe_intermediate_size": 2160,
-        "n_shared_experts": None,
-        "hidden_act": "silu",
-    }
-]
 # MoE Implementation
 MoE_modules = [
     FusedMoE,
@@ -52,7 +37,7 @@ class TestMoE(TestModule):
     Test the consistency of MoE Layer computation across different implementations.
     """
 
-    @pytest.mark.parametrize("module_config", MoE_configs)
+    @pytest.mark.parametrize("module_config", MODULE_CONFIGS)
     @pytest.mark.parametrize("moe_module_impl", MoE_modules)
     @pytest.mark.parametrize("weight_prefix", weight_prefixes)
     @pytest.mark.parametrize("dtype", TEST_DTYPES)

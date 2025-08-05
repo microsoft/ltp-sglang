@@ -1,10 +1,8 @@
 import pytest
 import torch
 
-# from sglang.srt.layers.attention.torch_native_backend import TorchNativeAttnBackend
-# from sglang.srt.layers.attention.triton_backend import TritonAttnBackend
 from sglang.srt.layers.dp_attention import initialize_dp_attention
-from sglang.test.numerical_tests.modules.test_attention import (
+from sglang.test.numerical_tests.modules.sglang.test_attention import (
     AttentionLayer,
     AttentionLayerTester,
 )
@@ -14,30 +12,8 @@ from sglang.test.numerical_tests.utils.load_data import (
     load_random_weights,
     load_weight_from_hf_ckp,
 )
+from sglang.test.numerical_tests.utils.module_config import MODULE_CONFIGS
 
-# Define the configurations for the Attention Layer tests
-AttentionLayer_configs = [
-    {
-        "hidden_size": 5120,
-        "num_attention_heads": 64,
-        "num_key_value_heads": 8,
-        "rope_theta": 10000,
-        "rope_scaling": {
-            "beta_fast": 32,
-            "beta_slow": 1,
-            "factor": 40,
-            "mscale": 0.707,
-            "mscale_all_dim": 0.707,
-            "original_max_position_embeddings": 4096,
-            "type": "yarn",
-        },
-        "max_position_embeddings": 4096,
-        "head_dim": 128,
-        "rms_norm_eps": 1e-06,
-        "attention_bias": False,
-        "qk_layernorm": True,
-    }
-]
 # Real weight prefixes in the model checkpoint for the Attention Layer tests
 weight_prefixes = [
     "model.layers.0.self_attn",
@@ -72,7 +48,7 @@ class TestAttentionLayer(TestModule):
             pp_size=1,
         )
 
-    @pytest.mark.parametrize("module_config", AttentionLayer_configs)
+    @pytest.mark.parametrize("module_config", MODULE_CONFIGS)
     @pytest.mark.parametrize("weight_prefix", weight_prefixes)
     @pytest.mark.parametrize("attn_backend", attention_backends)
     @pytest.mark.parametrize("dtype", TEST_DTYPES)

@@ -1,9 +1,5 @@
-import sys
-import uuid
-
 import pytest
 import torch
-from torch import nn
 
 from sglang.srt.layers.vocab_parallel_embedding import VocabParallelEmbedding
 from sglang.test.numerical_tests.test_module import TestModule
@@ -12,14 +8,9 @@ from sglang.test.numerical_tests.utils.load_data import (
     load_random_weights,
     load_weight_from_hf_ckp,
 )
+from sglang.test.numerical_tests.utils.module_config import MODULE_CONFIGS
 
 # Define the configurations for the Token Embedding tests
-Embedding_configs = [
-    {
-        "vocab_size": 200064,
-        "hidden_size": 5120,
-    }
-]
 weight_prefixs = [
     "model.embed_tokens",
     "random0",
@@ -33,7 +24,7 @@ class TestTokenEmbedding(TestModule):
     Test the consistency of Token Embedding Layer computation
     """
 
-    @pytest.mark.parametrize("embedding_config", Embedding_configs)
+    @pytest.mark.parametrize("embedding_config", MODULE_CONFIGS)
     @pytest.mark.parametrize("weight_prefix", weight_prefixs)
     @pytest.mark.parametrize("dtype", TEST_DTYPES)
     def test_sglang_embedding(

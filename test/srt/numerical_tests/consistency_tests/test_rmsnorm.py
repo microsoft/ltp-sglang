@@ -7,15 +7,12 @@ from torch import nn
 
 from sglang.srt.layers.layernorm import RMSNorm
 from sglang.test.numerical_tests.test_module import TestModule
-from sglang.test.numerical_tests.utils.check_tensor import *
 from sglang.test.numerical_tests.utils.common import *
 from sglang.test.numerical_tests.utils.load_data import (
     load_random_weights,
     load_weight_from_hf_ckp,
 )
-
-# Define the configurations for the RMSNorm tests
-RMSNorm_configs = [{"hidden_size": 5120, "rms_norm_eps": 1e-6}]
+from sglang.test.numerical_tests.utils.module_config import MODULE_CONFIGS
 
 weight_prefixes = [
     "model.layers.0.input_layernorm",
@@ -33,7 +30,7 @@ weight_prefixes = [
 class TestRMSNorm(TestModule):
     """Test the consistency of RMSNorm Layer computation"""
 
-    @pytest.mark.parametrize("module_config", RMSNorm_configs)
+    @pytest.mark.parametrize("module_config", MODULE_CONFIGS)
     @pytest.mark.parametrize("weight_prefix", weight_prefixes)
     @pytest.mark.parametrize("dtype", TEST_DTYPES)
     def test_sglang_rmsnorm(self, module_config, weight_prefix, dtype):

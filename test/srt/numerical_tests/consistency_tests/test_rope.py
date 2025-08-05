@@ -6,26 +6,7 @@ import torch
 from sglang.srt.layers.rotary_embedding import get_rope
 from sglang.test.numerical_tests.test_module import TestModule
 from sglang.test.numerical_tests.utils.common import *
-
-# Define the configurations for the Rotary Embedding tests
-ROPE_configs = [
-    {
-        "head_dim": 128,
-        "num_attention_heads": 64,
-        "num_key_value_heads": 8,
-        "max_position_embeddings": 4096,
-        "rope_theta": 10000,
-        "rope_scaling": {
-            "beta_fast": 32,
-            "beta_slow": 1,
-            "factor": 40,
-            "mscale": 0.707,
-            "mscale_all_dim": 0.707,
-            "original_max_position_embeddings": 4096,
-            "type": "yarn",
-        },
-    }
-]
+from sglang.test.numerical_tests.utils.module_config import MODULE_CONFIGS
 
 
 class TestRoPE(TestModule):
@@ -33,7 +14,7 @@ class TestRoPE(TestModule):
     Test the consistency of Rotary Embedding Layer computation
     """
 
-    @pytest.mark.parametrize("rope_config", ROPE_configs)
+    @pytest.mark.parametrize("rope_config", MODULE_CONFIGS)
     @pytest.mark.parametrize("dtype", TEST_DTYPES)
     def test_sglang_rope(self, rope_config: dict, dtype: torch.dtype):
         """Test the Rotary Embedding layer."""
