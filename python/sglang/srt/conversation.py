@@ -872,6 +872,21 @@ register_conv_template(
         system_template="<|endoftext|><|system|>{system_message}<|end|>",
         system_message=(
             "You are an AI assistant developed by Microsoft. "
+            "You are helpful for user to handle daily tasks."
+        ),
+        roles=("<|user|>", "<|assistant|>"),
+        sep_style=SeparatorStyle.NO_COLON_SINGLE,
+        sep="<|end|>",
+        stop_str=["<|end|>", "<|endoftext|>"],
+    )
+)
+
+register_conv_template(
+    Conversation(
+        name="sigma-reasoning",
+        system_template="<|endoftext|><|system|>{system_message}<|end|>",
+        system_message=(
+            "You are an AI assistant developed by Microsoft. "
             "You are helpful for user to handle daily tasks. "
             "To answer the user's question, you can first think about the reasoning process "
             "and then provide the user with the answer. "
@@ -966,6 +981,12 @@ def match_moonshot_kimivl(model_path: str):
 
 
 @register_conv_template_matching_function
-def match_sigma(model_path: str):
-    if re.search(r"sigma", model_path, re.IGNORECASE):
+def match_sigma_chat(model_path: str):
+    if re.search(r"sigma-v2-chat", model_path, re.IGNORECASE):
         return "sigma"
+
+
+@register_conv_template_matching_function
+def match_sigma_reasoning(model_path: str):
+    if re.search(r"sigma-v2-reasoning", model_path, re.IGNORECASE):
+        return "sigma-reasoning"
