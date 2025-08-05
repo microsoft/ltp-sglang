@@ -1,6 +1,7 @@
 from typing import Dict, Type
 from base_counter import BaseCounter
 from param_counter import ParamCounter
+from mem_counter import PrefillMemCounter, DecodeMemCounter
 
 class CounterRegistry:
     """Registry for managing different types of counters."""
@@ -31,3 +32,5 @@ class CounterRegistry:
 
 # Register default counters
 CounterRegistry.register("param", ParamCounter)
+CounterRegistry.register("prefill_mem", PrefillMemCounter)
+CounterRegistry.register("decode_mem", DecodeMemCounter)

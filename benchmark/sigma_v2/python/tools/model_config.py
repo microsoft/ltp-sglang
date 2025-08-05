@@ -24,6 +24,9 @@ class ModelConfig:
     moe_intermediate_size: int
     
     precision: Optional[str] = "fp16"
+    precision_bytes: Optional[int] = 2
+    
+    quantization_block_size: Optional[int] = 1
     
     num_key_value_heads: Optional[int] = None
     total_dense_layers: Optional[int] = 0
