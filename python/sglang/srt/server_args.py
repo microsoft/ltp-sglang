@@ -247,6 +247,11 @@ class ServerArgs:
     custom_weight_loader: Optional[List[str]] = None
     weight_loader_disable_mmap: bool = False
 
+    # For warmup and benchmark 
+    enable_benchmark: bool = False
+    benchmark_num_warmup: int = 50
+    benchmark_num_iters: int = 50
+    
     def __post_init__(self):
         # Expert parallelism
         if self.enable_ep_moe:
@@ -1679,6 +1684,23 @@ class ServerArgs:
             "--weight-loader-disable-mmap",
             action="store_true",
             help="Disable mmap while loading weight using safetensors.",
+        )
+        parser.add_argument(
+            "--enable-benchmark",
+            action="store_true",
+            help="Enable benchmark mode, which will run multiple times of the same input to obtain stable results.",
+        )
+        parser.add_argument(
+            "--benchmark-num-warmup",
+            type=int,
+            default=ServerArgs.benchmark_num_warmup,
+            help="Number of warmup iterations for benchmarking.",
+        )
+        parser.add_argument(
+            "--benchmark-num-iters",
+            type=int,
+            default=ServerArgs.benchmark_num_iters,
+            help="Number of iterations for benchmarking.",
         )
 
     @classmethod

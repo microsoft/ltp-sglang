@@ -46,6 +46,8 @@ from sglang.srt.utils import MultiprocessingSerializer, broadcast_pyobj, set_ran
 
 logger = logging.getLogger(__name__)
 
+WARMUP_STEPS = 50
+RUN_STEPS = 50
 
 class TpModelWorker:
     """A tensor parallel model worker."""
@@ -192,6 +194,38 @@ class TpModelWorker:
             self.model_runner.token_to_kv_pool_allocator,
         )
 
+    def run_batch_generation_benchmark(
+        self,
+        forward_batch: ForwardBatch,
+        pp_proxy_tensors: Optional[PPProxyTensors] = None,
+    ) -> Tuple[LogitsProcessorOutput, bool]:
+        warmup_steps = global_server_args_dict.get("benchmark_num_warmup", WARMUP_STEPS)
+        run_steps = global_server_args_dict.get("benchmark_num_iters", RUN_STEPS)
+
+        start = torch.cuda.Event(enable_timing=True)
+        end = torch.cuda.Event(enable_timing=True)
+
+        for i in range(warmup_steps + run_steps):
+            if i == warmup_steps:
+                start.record()
+            logits_output, can_run_cuda_graph = self.model_runner.forward(
+                forward_batch, pp_proxy_tensors=pp_proxy_tensors
+            )
+        end.record()
+        torch.cuda.synchronize()
+
+        phase = "Prefill" if forward_batch.forward_mode == 1 else "Decode"
+        avg_latency = start.elapsed_time(end) / max(1, run_steps)
+
+        logger.info(
+            f"Latency Benchmark Device {torch.cuda.current_device()} "
+            f"Phase: {phase}, Batch Size: {forward_batch.batch_size}, "
+            f"Sequence Length: {forward_batch.seq_lens[0]}, "
+            f"Average Latency: {avg_latency:.4f} ms"
+        )
+
+        return logits_output, can_run_cuda_graph
+    
     def forward_batch_generation(
         self,
         model_worker_batch: ModelWorkerBatch,
@@ -211,9 +245,16 @@ class TpModelWorker:
             )
 
         if self.pp_group.is_last_rank:
-            logits_output, can_run_cuda_graph = self.model_runner.forward(
-                forward_batch, pp_proxy_tensors=pp_proxy_tensors
-            )
+            if global_server_args_dict.get("enable_benchmark", False):
+                logits_output, can_run_cuda_graph = self.run_batch_generation_benchmark(
+                    forward_batch,
+                    pp_proxy_tensors=pp_proxy_tensors,
+                )
+            else:
+                logits_output, can_run_cuda_graph = self.model_runner.forward(
+                    forward_batch,
+                    pp_proxy_tensors=pp_proxy_tensors,
+                )
             if launch_done is not None:
                 launch_done.set()
 
@@ -226,10 +267,16 @@ class TpModelWorker:
 
             return logits_output, next_token_ids, can_run_cuda_graph
         else:
-            pp_proxy_tensors, can_run_cuda_graph = self.model_runner.forward(
-                forward_batch,
-                pp_proxy_tensors=pp_proxy_tensors,
-            )
+            if global_server_args_dict.get("enable_benchmark", False):
+                pp_proxy_tensors, can_run_cuda_graph = self.run_batch_generation_benchmark(
+                    forward_batch,
+                    pp_proxy_tensors=pp_proxy_tensors,
+                )
+            else:
+                pp_proxy_tensors, can_run_cuda_graph = self.model_runner.forward(
+                    forward_batch,
+                    pp_proxy_tensors=pp_proxy_tensors,
+                )
             return pp_proxy_tensors.tensors, None, can_run_cuda_graph
 
     def forward_batch_embedding(self, model_worker_batch: ModelWorkerBatch):

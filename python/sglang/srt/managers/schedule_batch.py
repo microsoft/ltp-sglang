@@ -102,6 +102,9 @@ GLOBAL_SERVER_ARGS_KEYS = [
     "num_reserved_decode_tokens",
     "weight_loader_disable_mmap",
     "enable_triton_kernel_moe",
+    "enable_benchmark",
+    "benchmark_num_warmup",
+    "benchmark_num_iters",
 ]
 
 # Put some global args for easy access
