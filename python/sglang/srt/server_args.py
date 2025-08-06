@@ -251,6 +251,7 @@ class ServerArgs:
     enable_benchmark: bool = False
     benchmark_num_warmup: int = 50
     benchmark_num_iters: int = 50
+    profile_phase: Optional[str] = None
     
     def __post_init__(self):
         # Expert parallelism
@@ -1701,6 +1702,12 @@ class ServerArgs:
             type=int,
             default=ServerArgs.benchmark_num_iters,
             help="Number of iterations for benchmarking.",
+        )
+        parser.add_argument(
+            "--profile-phase",
+            type=str,
+            default=ServerArgs.profile_phase,
+            help="Profile phase.",
         )
 
     @classmethod

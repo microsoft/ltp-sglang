@@ -105,6 +105,7 @@ GLOBAL_SERVER_ARGS_KEYS = [
     "enable_benchmark",
     "benchmark_num_warmup",
     "benchmark_num_iters",
+    "profile_phase"
 ]
 
 # Put some global args for easy access
