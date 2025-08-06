@@ -216,19 +216,21 @@ class TpModelWorker:
             logits_output, can_run_cuda_graph = self.model_runner.forward(
                 forward_batch, pp_proxy_tensors=pp_proxy_tensors
             )
-        end.record()
-        torch.cuda.synchronize()
         if profile_phase:
             torch.cuda.cudart().cudaProfilerStop()
-        phase = "Prefill" if forward_batch.forward_mode == 1 else "Decode"
-        avg_latency = start.elapsed_time(end) / max(1, run_steps)
+        else:
+            end.record()
+            torch.cuda.synchronize()
+        
+            phase = "Prefill" if forward_batch.forward_mode == 1 else "Decode"
+            avg_latency = start.elapsed_time(end) / max(1, run_steps)
 
-        logger.info(
-            f"Latency Benchmark Device {torch.cuda.current_device()} "
-            f"Phase: {phase}, Batch Size: {forward_batch.batch_size}, "
-            f"Sequence Length: {forward_batch.seq_lens[0]}, "
-            f"Average Latency: {avg_latency:.4f} ms"
-        )
+            logger.info(
+                f"Latency Benchmark Device {torch.cuda.current_device()} "
+                f"Phase: {phase}, Batch Size: {forward_batch.batch_size}, "
+                f"Sequence Length: {forward_batch.seq_lens[0]}, "
+                f"Average Latency: {avg_latency:.4f} ms"
+            )
 
         return logits_output, can_run_cuda_graph
     
