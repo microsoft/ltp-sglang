@@ -6,7 +6,7 @@ import torch
 from sglang.srt.layers.logits_processor import LogitsMetadata
 from sglang.srt.model_executor.forward_batch_info import ForwardMode
 from sglang.test.numerical_tests.comparison_module import CompareModule
-from sglang.test.numerical_tests.modules.test_logits import (
+from sglang.test.numerical_tests.modules.sglang.test_logits import (
     LogitsModule,
     MockLogitsConfig,
 )

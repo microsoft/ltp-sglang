@@ -4,7 +4,7 @@ import pytest
 
 from sglang.srt.layers.moe.fused_moe_triton import FusedMoE
 from sglang.test.numerical_tests.comparison_module import CompareModule
-from sglang.test.numerical_tests.modules.test_moe import MoE
+from sglang.test.numerical_tests.modules.sglang.test_moe import MoE
 from sglang.test.numerical_tests.utils.common import (
     BENCHMARK_FOLDER,
     LOG_DIR,

@@ -5,7 +5,7 @@ import torch
 
 from sglang.srt.layers.dp_attention import initialize_dp_attention
 from sglang.test.numerical_tests.comparison_module import CompareModule
-from sglang.test.numerical_tests.modules.test_attention import (
+from sglang.test.numerical_tests.modules.sglang.test_attention import (
     AttentionLayer,
     AttentionLayerTester,
 )
