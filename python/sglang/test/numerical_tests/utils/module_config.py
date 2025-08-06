@@ -1,5 +1,6 @@
 MODULE_CONFIGS = [
     {
+        "attention_bias": False,
         "hidden_act": "silu",
         "hidden_size": 5120,
         "intermediate_size": 7168,

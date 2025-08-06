@@ -46,7 +46,7 @@ class TestLogits(TestModule):
         log_dir = os.path.join(
             LOG_DIR,
             "logits",
-            f"{logits_config.vocab_size}_{logits_config.hidden_size}",
+            f"{mock_config.vocab_size}_{mock_config.hidden_size}",
             f"weights-{weight_prefix}",
         )
         os.makedirs(log_dir, exist_ok=True)
@@ -60,7 +60,7 @@ class TestLogits(TestModule):
             return logits_res.next_token_logits
 
         def random_input_func(bs, sl, dtype):
-            tensor = torch.randn(bs * sl, logits_config.hidden_size, dtype=dtype).cuda()
+            tensor = torch.randn(bs * sl, mock_config.hidden_size, dtype=dtype).cuda()
 
             logit_metadata = LogitsMetadata(
                 forward_mode=ForwardMode.EXTEND,
