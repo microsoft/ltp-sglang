@@ -1707,7 +1707,7 @@ class ServerArgs:
             "--profile-phase",
             type=str,
             default=ServerArgs.profile_phase,
-            help="Profile phase.",
+            help="Specify which phase to profile during benchmarking ('prefill', 'decode', or None to disable profiling).",
         )
 
     @classmethod
