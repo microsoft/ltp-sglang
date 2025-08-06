@@ -202,17 +202,18 @@ class TpModelWorker:
         warmup_steps = global_server_args_dict.get("benchmark_num_warmup", WARMUP_STEPS)
         run_steps = global_server_args_dict.get("benchmark_num_iters", RUN_STEPS)
         profile_phase = global_server_args_dict.get("profile_phase", None)
-        start = torch.cuda.Event(enable_timing=True)
-        end = torch.cuda.Event(enable_timing=True)
+        if profile_phase is not None:
+            start = torch.cuda.Event(enable_timing=True)
+            end = torch.cuda.Event(enable_timing=True)
 
         for i in range(warmup_steps + run_steps):
             if i == warmup_steps:
-                if profile_phase == "prefill" and forward_batch.forward_mode == 1:
+                if profile_phase is not None:
+                    start.record()
+                elif profile_phase == "prefill" and forward_batch.forward_mode == 1:
                     torch.cuda.cudart().cudaProfilerStart()
                 elif profile_phase == "decode" and forward_batch.forward_mode == 2:
                     torch.cuda.cudart().cudaProfilerStart()
-                else:
-                    start.record()
             logits_output, can_run_cuda_graph = self.model_runner.forward(
                 forward_batch, pp_proxy_tensors=pp_proxy_tensors
             )
