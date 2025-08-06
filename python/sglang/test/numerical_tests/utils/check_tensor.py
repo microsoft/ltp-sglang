@@ -35,3 +35,37 @@ def compare_tensors(tensor_list: list[torch.Tensor], tolerance=1e-5):
             cos_similarities.append(cos_similarity)
 
     return max_diffs, is_closes, cos_similarities
+
+
+def get_mean_std(tensor_list: list[torch.Tensor]):
+    """Calculate the mean and standard deviation of a list of tensors."""
+    if not tensor_list:
+        raise ValueError("The list of tensors is empty.")
+
+    # Ensure all tensors are on the same device and have the same shape
+    first_tensor = tensor_list[0]
+    for tensor in tensor_list[1:]:
+        if tensor.shape != first_tensor.shape or tensor.device != first_tensor.device:
+            raise ValueError(
+                "All tensors must have the same shape and be on the same device."
+            )
+
+    # Stack tensors and calculate mean and std
+    stacked_tensors = torch.stack(tensor_list)
+    mean = torch.mean(stacked_tensors, dim=0)
+    std = torch.std(stacked_tensors, dim=0)
+    return mean, std
+
+
+def compare_output_lists(bench_output, sglang_output):
+    """Compare two lists of tensors and return the maximum absolute difference."""
+    if len(bench_output) != len(sglang_output):
+        raise ValueError("Output lists have different lengths.")
+
+    bench_mean, bench_std = get_mean_std(bench_output)
+    sglang_mean, sglang_std = get_mean_std(sglang_output)
+
+    max_mean_diff, _, similarity = compare_tensor_pair(bench_mean, sglang_mean)
+    max_std_diff = torch.max(torch.abs(bench_std - sglang_std)).item()
+
+    return similarity, max_mean_diff, max_std_diff
