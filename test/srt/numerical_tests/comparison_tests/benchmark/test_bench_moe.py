@@ -4,29 +4,13 @@ import pytest
 import torch
 
 from sglang.test.numerical_tests.bench_module import BenchConfig, BenchModule
-from sglang.test.numerical_tests.modules.tf.test_moe import MoE
+from sglang.test.numerical_tests.modules.transformers.test_moe import MoE
 from sglang.test.numerical_tests.utils.common import *
 from sglang.test.numerical_tests.utils.load_data import (
     load_random_weights,
     load_weight_from_hf_ckp,
 )
-
-# Define the configurations for the MoE tests
-MoE_configs = [
-    {
-        "num_experts_per_tok": 8,
-        "n_routed_experts": 96,
-        "routed_scaling_factor": 1.0,
-        "scoring_func": "sigmoid",
-        "seq_aux": True,
-        "topk_method": "noaux_tc",
-        "norm_topk_prob": True,
-        "hidden_size": 5120,
-        "moe_intermediate_size": 2160,
-        "n_shared_experts": None,
-        "hidden_act": "silu",
-    }
-]
+from sglang.test.numerical_tests.utils.module_config import MODULE_CONFIGS
 
 # Define the real weight prefixes in the model checkpoint for the MoE tests
 weight_prefixes = [
@@ -44,7 +28,7 @@ weight_prefixes = [
 class TestBenchMoE(BenchModule):
     """Test MoE Layer computation with a benchmark (Transformers' implementation)."""
 
-    @pytest.mark.parametrize("module_config", MoE_configs)
+    @pytest.mark.parametrize("module_config", MODULE_CONFIGS)
     @pytest.mark.parametrize("weight_prefix", weight_prefixes)
     def test_bench_moe(self, module_config, weight_prefix):
         """Run the sglang MoE with random input and trace tensors."""

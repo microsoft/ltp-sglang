@@ -9,14 +9,7 @@ from sglang.test.numerical_tests.utils.load_data import (
     load_random_weights,
     load_weight_from_hf_ckp,
 )
-
-# Define the configurations for Logits tests
-Logits_configs = [
-    {
-        "vocab_size": 200064,
-        "hidden_size": 5120,
-    }
-]
+from sglang.test.numerical_tests.utils.module_config import MODULE_CONFIGS
 
 weight_prefixes = [
     "lm_head",
@@ -30,7 +23,7 @@ class TestBenchLogits(BenchModule):
     Test the Logits Layer computation with a benchmark (Transformers' implementation).
     """
 
-    @pytest.mark.parametrize("logits_config", Logits_configs)
+    @pytest.mark.parametrize("logits_config", MODULE_CONFIGS)
     @pytest.mark.parametrize("weight_prefix", weight_prefixes)
     def test_bench_logits(self, logits_config, weight_prefix):
         """Run the sglang Logits with random input and trace tensors."""

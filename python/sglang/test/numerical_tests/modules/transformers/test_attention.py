@@ -1,14 +1,13 @@
-from typing import Callable, Optional, Tuple
+from typing import Optional, Tuple
 
 import torch
 from torch import nn
-from transformers.cache_utils import Cache
 from transformers.modeling_flash_attention_utils import FlashAttentionKwargs
 from transformers.modeling_utils import ALL_ATTENTION_FUNCTIONS
 from transformers.processing_utils import Unpack
 
-from sglang.test.numerical_tests.modules.tf.test_rmsnorm import RMSNorm
-from sglang.test.numerical_tests.modules.tf.test_rope import RotaryEmbedding
+from sglang.test.numerical_tests.modules.transformers.test_rmsnorm import RMSNorm
+from sglang.test.numerical_tests.modules.transformers.test_rope import RotaryEmbedding
 
 SigmaConfig = None
 

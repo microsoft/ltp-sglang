@@ -27,5 +27,5 @@ TEST_DTYPES = [torch.bfloat16]
 # Define the target data type for comparison tests
 TARGET_DTYPE = torch.bfloat16
 
-RANDOM_INPUT_COUNT = 1
+RANDOM_INPUT_COUNT = 5
 REPEAT_COUNT = 3

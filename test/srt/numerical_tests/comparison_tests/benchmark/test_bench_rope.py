@@ -3,21 +3,9 @@ import os
 import pytest
 
 from sglang.test.numerical_tests.bench_module import BenchConfig, BenchModule
-from sglang.test.numerical_tests.modules.tf.test_rope import RotaryEmbedding
+from sglang.test.numerical_tests.modules.transformers.test_rope import RotaryEmbedding
 from sglang.test.numerical_tests.utils.common import *
-
-# Define the configurations for the Rotary Embedding tests
-ROPE_configs = [
-    {
-        "head_dim": 128,
-        "num_attention_heads": 64,
-        "num_key_value_heads": 8,
-        "max_position_embeddings": 4096,
-        "rope_theta": 10000,
-        "rope_scaling": None,
-        "hidden_size": 5120,
-    }
-]
+from sglang.test.numerical_tests.utils.module_config import MODULE_CONFIGS
 
 
 class TestBenchRoPE(BenchModule):
@@ -25,7 +13,7 @@ class TestBenchRoPE(BenchModule):
     Test the Rotary Position Embedding Layer computation with a benchmark (Transformers' implementation).
     """
 
-    @pytest.mark.parametrize("rope_config", ROPE_configs)
+    @pytest.mark.parametrize("rope_config", MODULE_CONFIGS)
     def test_bench_rope(self, rope_config):
         """Run the sglang RoPE with random input and trace tensors."""
         # Initialize the Rotary Embedding module with the given configurations

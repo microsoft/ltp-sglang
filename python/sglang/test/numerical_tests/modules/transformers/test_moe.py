@@ -132,7 +132,7 @@ class MoE(nn.Module):
             ]
         )
         self.gate = MoEGate(config)
-        if config["n_shared_experts"] is not None:
+        if config["n_shared_experts"] is not None and config["n_shared_experts"] > 0:
             intermediate_size = (
                 config["moe_intermediate_size"] * config["n_shared_experts"]
             )
@@ -146,7 +146,10 @@ class MoE(nn.Module):
         topk_idx, topk_weight = self.gate(hidden_states)
         hidden_states = hidden_states.view(-1, hidden_states.shape[-1])
         y = self.moe_infer(hidden_states, topk_idx, topk_weight).view(*orig_shape)
-        if self.config["n_shared_experts"] is not None:
+        if (
+            self.config["n_shared_experts"] is not None
+            and self.config["n_shared_experts"] > 0
+        ):
             y = y + self.shared_experts(identity)
         return y
 

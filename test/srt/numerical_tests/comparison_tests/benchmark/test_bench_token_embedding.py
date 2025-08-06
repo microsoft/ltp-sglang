@@ -10,14 +10,8 @@ from sglang.test.numerical_tests.utils.load_data import (
     load_random_weights,
     load_weight_from_hf_ckp,
 )
+from sglang.test.numerical_tests.utils.module_config import MODULE_CONFIGS
 
-# Define the configurations for the Token Embedding tests
-Embedding_configs = [
-    {
-        "vocab_size": 200064,
-        "hidden_size": 5120,
-    }
-]
 weight_prefixes = [
     "model.embed_tokens",
     "random0",
@@ -31,8 +25,8 @@ class TestBenchTokenEmbedding(BenchModule):
     Test the Token Embedding Layer computation with a benchmark (Transformers' implementation).
     """
 
-    @pytest.mark.parametrize("embedding_config", Embedding_configs)
-    @pytest.mark.parametrize("weight_prefix", weight_prefixs)
+    @pytest.mark.parametrize("embedding_config", MODULE_CONFIGS)
+    @pytest.mark.parametrize("weight_prefix", weight_prefixes)
     def test_bench_embedding(self, embedding_config, weight_prefix):
         """Run the sglang Token Embedding with random input and trace tensors."""
         # Initialize the embedding module with the given configurations

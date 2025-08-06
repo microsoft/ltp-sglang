@@ -3,29 +3,14 @@ import os
 import pytest
 
 from sglang.test.numerical_tests.bench_module import BenchConfig, BenchModule
-from sglang.test.numerical_tests.modules.tf.test_attention import GQAAttention
+from sglang.test.numerical_tests.modules.transformers.test_attention import GQAAttention
 from sglang.test.numerical_tests.utils.common import *
 from sglang.test.numerical_tests.utils.load_data import (
     load_random_weights,
     load_weight_from_hf_ckp,
 )
+from sglang.test.numerical_tests.utils.module_config import MODULE_CONFIGS
 
-# Define the configurations for the Attention Layer tests
-AttentionLayer_configs = [
-    {
-        "hidden_size": 5120,
-        "num_attention_heads": 64,
-        "num_key_value_heads": 8,
-        "rope_theta": 10000,
-        "rope_scaling": None,
-        "max_position_embeddings": 4096,
-        "head_dim": 128,
-        "rms_norm_eps": 1e-06,
-        "attention_bias": False,
-        "qk_layernorm": True,
-        "_attn_implementation": "flash_attention_2",
-    }
-]
 # Real weight prefixes in the model checkpoint for the Attention Layer tests
 weight_prefixes = [
     "model.layers.0.self_attn",
@@ -44,7 +29,7 @@ class TestBenchAttentionLayer(BenchModule):
     Test the Attention Layer computation with a benchmark (Transformers' implementation).
     """
 
-    @pytest.mark.parametrize("module_config", AttentionLayer_configs)
+    @pytest.mark.parametrize("module_config", MODULE_CONFIGS)
     @pytest.mark.parametrize("weight_prefix", weight_prefixes)
     def test_bench_attention(self, module_config, weight_prefix):
         """Run the sglang Attention Layer with random input and trace tensors."""

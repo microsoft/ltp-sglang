@@ -3,15 +3,13 @@ import os
 import pytest
 
 from sglang.test.numerical_tests.bench_module import BenchConfig, BenchModule
-from sglang.test.numerical_tests.modules.tf.test_rmsnorm import RMSNorm
+from sglang.test.numerical_tests.modules.transformers.test_rmsnorm import RMSNorm
 from sglang.test.numerical_tests.utils.common import *
 from sglang.test.numerical_tests.utils.load_data import (
     load_random_weights,
     load_weight_from_hf_ckp,
 )
-
-# Define the configurations for the RMSNorm tests
-RMSNorm_configs = [{"hidden_size": 5120, "rms_norm_eps": 1e-6}]
+from sglang.test.numerical_tests.utils.module_config import MODULE_CONFIGS
 
 weight_prefixes = [
     "model.layers.0.input_layernorm",
@@ -28,7 +26,7 @@ weight_prefixes = [
 class TestBenchRMSNorm(BenchModule):
     """Test RMSNorm Layer computation with a benchmark (Transformers' implementation)."""
 
-    @pytest.mark.parametrize("module_config", RMSNorm_configs)
+    @pytest.mark.parametrize("module_config", MODULE_CONFIGS)
     @pytest.mark.parametrize("weight_prefix", weight_prefixes)
     def test_bench_rmsnorm(self, module_config, weight_prefix):
         """Run the sglang RMSNorm with random input and trace tensors."""
