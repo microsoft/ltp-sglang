@@ -79,7 +79,7 @@ class CompareModule:
                 trace_metadata = TraceMetadata.from_dict(tensors_info_dict)
                 tensor_folder_name = os.path.basename(tensor_folder)
 
-                all_similiarities = []
+                all_similarities = []
                 all_max_mean_diffs = []
                 all_max_std_diffs = []
                 for trace_group in trace_metadata.groups:
@@ -106,14 +106,14 @@ class CompareModule:
                         bench_output_tensors, sglang_output_tensors
                     )
 
-                    all_similiarities.append(simi)
+                    all_similarities.append(simi)
                     all_max_mean_diffs.append(max_mean_diff)
                     all_max_std_diffs.append(max_std_diff)
 
                 # Store the comparison results for this tensor folder
                 # which contains multiple trace groups with the same shape
                 compare_results[tensor_folder_name] = {
-                    "similarity": all_similiarities,
+                    "similarity": all_similarities,
                     "max_mean_diff": all_max_mean_diffs,
                     "max_std_diff": all_max_std_diffs,
                 }
