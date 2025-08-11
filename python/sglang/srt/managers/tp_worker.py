@@ -49,6 +49,7 @@ logger = logging.getLogger(__name__)
 WARMUP_STEPS = 50
 RUN_STEPS = 50
 
+
 class TpModelWorker:
     """A tensor parallel model worker."""
 
@@ -222,7 +223,7 @@ class TpModelWorker:
         else:
             end.record()
             torch.cuda.synchronize()
-        
+
             phase = "Prefill" if forward_batch.forward_mode == 1 else "Decode"
             avg_latency = start.elapsed_time(end) / max(1, run_steps)
 
@@ -234,7 +235,7 @@ class TpModelWorker:
             )
 
         return logits_output, can_run_cuda_graph
-    
+
     def forward_batch_generation(
         self,
         model_worker_batch: ModelWorkerBatch,
@@ -277,9 +278,11 @@ class TpModelWorker:
             return logits_output, next_token_ids, can_run_cuda_graph
         else:
             if global_server_args_dict.get("enable_benchmark", False):
-                pp_proxy_tensors, can_run_cuda_graph = self.run_batch_generation_benchmark(
-                    forward_batch,
-                    pp_proxy_tensors=pp_proxy_tensors,
+                pp_proxy_tensors, can_run_cuda_graph = (
+                    self.run_batch_generation_benchmark(
+                        forward_batch,
+                        pp_proxy_tensors=pp_proxy_tensors,
+                    )
                 )
             else:
                 pp_proxy_tensors, can_run_cuda_graph = self.model_runner.forward(

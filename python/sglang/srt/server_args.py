@@ -247,12 +247,12 @@ class ServerArgs:
     custom_weight_loader: Optional[List[str]] = None
     weight_loader_disable_mmap: bool = False
 
-    # For warmup and benchmark 
+    # For warmup and benchmark
     enable_benchmark: bool = False
     benchmark_num_warmup: int = 50
     benchmark_num_iters: int = 50
     profile_phase: Optional[str] = None
-    
+
     def __post_init__(self):
         # Expert parallelism
         if self.enable_ep_moe:
