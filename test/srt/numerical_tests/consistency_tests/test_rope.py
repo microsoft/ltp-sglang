@@ -26,7 +26,7 @@ class TestRoPE(TestModule):
             base=rope_config["rope_theta"],
             rope_scaling=rope_config["rope_scaling"],
         )
-        rope_module = rope_module.to(dtype=dtype).cuda()
+        rope_module = rope_module.cuda()
         rope_module.eval()
 
         print(f"Testing RoPE with weights: {rope_config=} " f" {dtype=}")
