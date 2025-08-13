@@ -79,7 +79,7 @@ class CompareModule:
                 trace_metadata = TraceMetadata.from_dict(tensors_info_dict)
                 tensor_folder_name = os.path.basename(tensor_folder)
 
-                all_similiarities = []
+                all_similarities = []
                 all_max_mean_diffs = []
                 all_max_std_diffs = []
                 for trace_group in trace_metadata.groups:

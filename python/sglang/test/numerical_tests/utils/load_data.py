@@ -13,6 +13,12 @@ from sglang.test.numerical_tests.utils.common import (
 )
 
 
+def module_parameters_to_dtype(module: torch.nn.Module, dtype: torch.dtype):
+    for name, param in module.named_parameters(recurse=True):
+        param.data = param.data.to(dtype=dtype)
+    return module
+
+
 def load_random_weights(module: nn.Module, dtype=torch.bfloat16):
     """Load random weights into a sglang module."""
     for name, param in module.named_parameters():
@@ -21,7 +27,7 @@ def load_random_weights(module: nn.Module, dtype=torch.bfloat16):
         elif "bias" in name and param is not None:
             param.data = torch.randn_like(param.data, dtype=dtype)
     # Set the module to evaluation mode
-    module = module.to(dtype=dtype).cuda()
+    module = module.cuda()
     module.eval()
     return module
 
@@ -73,8 +79,7 @@ def load_weight_from_hf_ckp(
                         raise ValueError(f"Weight {field} not found in {file_name}")
         module.load_weights(weights)
         # Move the module to the specified dtype and GPU
-        module = module.to(dtype=dtype).cuda()
-        module.eval()
+        module = module_parameters_to_dtype(module, dtype).cuda().eval()
         return module
 
     # the the fields of the module
@@ -103,8 +108,8 @@ def load_weight_from_hf_ckp(
                 else:
                     raise ValueError(f"Weight {key} not found in {file_name}")
     # Move the module to the specified dtype and GPU
-    module = module.to(dtype=dtype).cuda()
-    module.eval()
+    module = module_parameters_to_dtype(module, dtype).cuda().eval()
+
     return module
 
 
@@ -154,7 +159,7 @@ def load_module(
                 weights.append((key, f.get_tensor(key)))
         sgl_module.load_weights(weights)
         # Set the module to evaluation mode
-        sgl_module = sgl_module.to(dtype=dtype).cuda()
+        sgl_module = module_parameters_to_dtype(sgl_module, dtype).cuda().eval()
         return sgl_module
 
     with safe_open(weight_path, framework="pt", device="cpu") as f:
@@ -165,9 +170,7 @@ def load_module(
             else:
                 raise KeyError(f"Weight {name} not found in {weight_path}")
 
-    sgl_module = sgl_module.to(dtype=dtype).cuda()
-    # Set the module to evaluation mode
-    sgl_module.eval()
+    sgl_module = module_parameters_to_dtype(sgl_module, dtype).cuda().eval()
     return sgl_module
 
 
