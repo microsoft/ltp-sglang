@@ -16,8 +16,8 @@ class MemCounter(BaseCounter):
     """Base counter for memory access bytes calculations. Support MHA, GQA, MLA with LoRA"""
 
     def __init__(self, **kwargs):
-        self.model_precision_bytes = kwargs.get("precision_bytes")
-        self.quantization_block_size = kwargs.get("quantization_block_size", 128)
+        super().__init__()
+        self.model_precision_bytes = kwargs.get("precision_bytes", 2)
 
     def tensor_size(
         self,
