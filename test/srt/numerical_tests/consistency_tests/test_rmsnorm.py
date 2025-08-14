@@ -17,8 +17,7 @@ from sglang.test.numerical_tests.utils.module_config import MODULE_CONFIGS
 weight_prefixes = [
     "model.layers.0.input_layernorm",
     "model.layers.20.post_attention_layernorm",
-    "model.layers.40.self_attn.q_layernorm",
-    "model.layers.60.self_attn.k_layernorm",
+    "model.layers.40.input_layernorm",
     "model.norm",
     "random0",
     "random1",
