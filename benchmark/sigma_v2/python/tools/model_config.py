@@ -66,6 +66,7 @@ class ModelConfig:
         if "quantization_config" in config_dict:
             quant_method = config_dict["quantization_config"].get("quant_method", None)
             result["precision"] = quant_method if quant_method else "bf16"
+            result["precision_bytes"] = PRECISION_TO_BYTES.get(result["precision"], 2)
 
         if missing_required:
             raise ValueError(

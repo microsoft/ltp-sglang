@@ -53,7 +53,12 @@ def main():
         models_info[config.name] = {}
         for counter_name in counter_names:
             try:
-                counter = CounterRegistry.get_counter(counter_name)
+                if "mem" in counter_name:
+                    counter = CounterRegistry.get_counter(
+                        counter_name, precision_bytes=config.precision_bytes
+                    )
+                else:
+                    counter = CounterRegistry.get_counter(counter_name)
                 result = counter.get_model_results(seq_len, config)
                 models_info[config.name][counter.metric_name] = result
             except (ValueError, IndexError) as e:
