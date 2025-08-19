@@ -87,6 +87,9 @@ global_server_args_dict = {
     "speculative_accept_threshold_single": ServerArgs.speculative_accept_threshold_single,
     "torchao_config": ServerArgs.torchao_config,
     "triton_attention_reduce_in_fp32": ServerArgs.triton_attention_reduce_in_fp32,
+    "enable_benchmark": ServerArgs.enable_benchmark,
+    "benchmark_num_warmup": ServerArgs.benchmark_num_warmup,
+    "benchmark_num_iters": ServerArgs.benchmark_num_iters,
 }
 
 logger = logging.getLogger(__name__)
