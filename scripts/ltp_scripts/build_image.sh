@@ -16,7 +16,7 @@ docker build \
     --build-arg BASE_IMAGE=lmsysorg/sglang:v0.4.6.post4-cu124 \
     --build-arg SGLANG_SRC=$project_dir \
     -t sglang-inference-cuda:$tag \
-    -f ./dev.rocm.dockerfile \
+    -f ./dev.cuda.dockerfile \
     $project_dir
 
 # Build the ROCm-based Docker image
@@ -24,5 +24,5 @@ docker build \
     --build-arg BASE_IMAGE=rocm/sgl-dev:20250518-srt \
     --build-arg SGLANG_SRC=$project_dir \
     -t sglang-inference-rocm:$tag \
-    -f ./dev.cuda.dockerfile \
+    -f ./dev.rocm.dockerfile \
     $project_dir
