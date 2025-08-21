@@ -269,6 +269,8 @@ class ServerArgs:
     enable_benchmark: bool = False
     benchmark_num_warmup: int = 50
     benchmark_num_iters: int = 50
+    profile_phase: Optional[str] = None
+    
     # For model weight update
     custom_weight_loader: Optional[List[str]] = None
     weight_loader_disable_mmap: bool = False
@@ -1900,6 +1902,12 @@ class ServerArgs:
             type=int,
             default=ServerArgs.benchmark_num_iters,
             help="Number of iterations for benchmarking.",
+        )
+        parser.add_argument(
+            "--profile-phase",
+            type=str,
+            default=ServerArgs.profile_phase,
+            help="Specify which phase to profile during benchmarking ('prefill', 'decode', or None to disable profiling).",
         )
 
     @classmethod

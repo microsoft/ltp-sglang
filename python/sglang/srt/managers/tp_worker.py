@@ -226,28 +226,37 @@ class TpModelWorker:
     ) -> Tuple[LogitsProcessorOutput, bool]:
         warmup_steps = global_server_args_dict.get("benchmark_num_warmup", WARMUP_STEPS)
         run_steps = global_server_args_dict.get("benchmark_num_iters", RUN_STEPS)
-
-        start = torch.cuda.Event(enable_timing=True)
-        end = torch.cuda.Event(enable_timing=True)
-
+        profile_phase = global_server_args_dict.get("profile_phase", None)
+        if not profile_phase:
+            start = torch.cuda.Event(enable_timing=True)
+            end = torch.cuda.Event(enable_timing=True)  
+            
         for i in range(warmup_steps + run_steps):
             if i == warmup_steps:
-                start.record()
+                if not profile_phase:
+                    start.record()
+                elif profile_phase == "prefill" and forward_batch.forward_mode == 1:
+                    torch.cuda.cudart().cudaProfilerStart()
+                elif profile_phase == "decode" and forward_batch.forward_mode == 2:
+                    torch.cuda.cudart().cudaProfilerStart()
             logits_output, can_run_cuda_graph = self.model_runner.forward(
                 forward_batch, pp_proxy_tensors=pp_proxy_tensors
             )
-        end.record()
-        torch.cuda.synchronize()
+        if profile_phase:
+            torch.cuda.cudart().cudaProfilerStop()
+        else:
+            end.record()
+            torch.cuda.synchronize()
 
-        phase = "Prefill" if forward_batch.forward_mode == 1 else "Decode"
-        avg_latency = start.elapsed_time(end) / max(1, run_steps)
+            phase = "Prefill" if forward_batch.forward_mode == 1 else "Decode"
+            avg_latency = start.elapsed_time(end) / max(1, run_steps)
 
-        logger.info(
-            f"Latency Benchmark Device {torch.cuda.current_device()} "
-            f"Phase: {phase}, Batch Size: {forward_batch.batch_size}, "
-            f"Sequence Length: {forward_batch.seq_lens[0]}, "
-            f"Average Latency: {avg_latency:.4f} ms"
-        )
+            logger.info(
+                f"Latency Benchmark Device {torch.cuda.current_device()} "
+                f"Phase: {phase}, Batch Size: {forward_batch.batch_size}, "
+                f"Sequence Length: {forward_batch.seq_lens[0]}, "
+                f"Average Latency: {avg_latency:.4f} ms"
+            )
 
         return logits_output, can_run_cuda_graph
 
