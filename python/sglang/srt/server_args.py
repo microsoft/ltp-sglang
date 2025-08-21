@@ -265,6 +265,9 @@ class ServerArgs:
     num_reserved_decode_tokens: int = 512  # used for decode kv cache offload in PD
     pdlb_url: Optional[str] = None
 
+    # For enforce batching
+    enforce_batching: bool = False
+    
     # For warmup and benchmark
     enable_benchmark: bool = False
     benchmark_num_warmup: int = 50
@@ -1883,7 +1886,11 @@ class ServerArgs:
             action="store_true",
             help="(Deprecated) Enabling DeepEP MoE implementation for EP MoE.",
         )
-
+        parser.add_argument(
+            "--enforce-batching",
+            action="store_true",
+            help="Enforce batching for tokenizer requests.",
+        )
         parser.add_argument(
             "--enable-benchmark",
             action="store_true",
