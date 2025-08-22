@@ -267,7 +267,7 @@ class ServerArgs:
 
     # For enforce batching
     enforce_batching: bool = False
-    
+
     # For warmup and benchmark
     enable_benchmark: bool = False
     benchmark_num_warmup: int = 50

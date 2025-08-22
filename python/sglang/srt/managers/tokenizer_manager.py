@@ -829,7 +829,10 @@ class TokenizerManager:
                 tokenized_objs = await asyncio.gather(
                     *(self._tokenize_one_request(obj) for obj in objs)
                 )
-                states = [ReqState([], False, asyncio.Event(), obj, created_time=created_time) for obj in objs]
+                states = [
+                    ReqState([], False, asyncio.Event(), obj, created_time=created_time)
+                    for obj in objs
+                ]
                 for i, obj in enumerate(objs):
                     self.rid_to_state[obj.rid] = states[i]
                     generators.append(self._wait_one_response(obj, states[i], request))
