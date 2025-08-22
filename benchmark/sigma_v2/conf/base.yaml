@@ -1,11 +1,11 @@
 defaults:
   - _self_
-  
+
 model: ./model_conf/qwen_sigma
 load_format: dummy
 
 max_running_requests: 16384
-chunked_prefill_size: 32000 
+chunked_prefill_size: 32000
 max_prefill_tokens: 1048576
 
 disable_custom_all_reduce: false
@@ -18,7 +18,7 @@ mem_fraction_static: 0.5
 
 trust_remote_code: true
 
-log_level: debug 
+log_level: debug
 
 max_tokens_generated: 2
 

@@ -11,7 +11,7 @@ usage() {
     echo "  --mconf MODELCONF Model conf to use (default: full)"
     echo "  --ip IP          IP address (default: eth0 IP or 10.0.0.101)"
     echo "  --rank RANK      Rank (default: 0)"
-    echo "  --save SAVE      Save results to a specific directory (default: false)"    
+    echo "  --save SAVE      Save results to a specific directory (default: false)"
     echo "  --profile TYPE   Profiling type: none, prefill, decode, both (default: none)"
     echo "  -h, --help       Display this help message"
     exit 1
@@ -33,14 +33,14 @@ run_benchmark() {
     local profile_phase=$1
     local bsz=$2
     local seq_len=$3
-    
+
     if [[ -n "$profile_phase" ]]; then
         echo "Running profiling $profile_phase phase"
         local profile_folder="results/${model}_profile/nsys_report"
         local sub_profile_folder="${profile_phase}_profile"
         mkdir -p "$profile_folder/${sub_profile_folder}"
         local profile_filename="${profile_folder}/${sub_profile_folder}/profile_${profile_phase}_bsz_${bsz}_seq_${seq_len}_base_${base}_config_${deploy}_backend_${backend}"
-        
+
         local run_params_profile=("${run_params[@]}" "base.profile_phase=$profile_phase")
         nsys profile \
             -t nvtx,cuda \
@@ -55,7 +55,7 @@ run_benchmark() {
             }
     else
         echo "Running latency benchmark"
-        python3 -u "$run_script" "${run_params[@]}" 2>&1 | tee -a "$benchmark_log_filename" 
+        python3 -u "$run_script" "${run_params[@]}" 2>&1 | tee -a "$benchmark_log_filename"
     fi
     return 0
 }
@@ -103,7 +103,7 @@ while [[ $# -gt 0 ]]; do
         --profile)
             profile="$2"
             shift 2
-            ;;        
+            ;;
         *)
             echo "Unknown argument: $1"
             usage
@@ -171,7 +171,7 @@ while read -r bszs seq_lens; do
     echo "Running with batch sizes: $bszs, sequence lengths: $seq_lens" | tee -a "$benchmark_log_filename"
     run_params+=("--bszs=$bszs" "--seq_lens=$seq_lens")
     if [[ "$profile" == "none" ]]; then
-        run_benchmark "" "$bszs" "$seq_lens" 
+        run_benchmark "" "$bszs" "$seq_lens"
         if [[ "$save" == "true" ]]; then
             python3 $analysis_script --log "$benchmark_log_filename"
         fi
@@ -179,7 +179,7 @@ while read -r bszs seq_lens; do
         run_benchmark "prefill" "$bszs" "$seq_lens"
         cleanup
     fi
-    
+
     if [[ "$profile" == "decode" || "$profile" == "both" ]]; then
         run_benchmark "decode" "$bszs" "$seq_lens"
         cleanup

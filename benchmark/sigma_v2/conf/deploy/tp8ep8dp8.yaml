@@ -10,4 +10,3 @@ enable_dp_lm_head: true
 enable_ep_moe: true
 enable_deepep_moe: false
 expert_parallel_size: 8
-
