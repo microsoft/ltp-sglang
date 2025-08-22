@@ -348,7 +348,7 @@ def dp_scatter(
     if local_tokens.shape[0] > 0:
         assert (
             local_tokens.untyped_storage() is not global_tokens.untyped_storage()
-        ), "aliasing between global_tokens and local_tokens not allowed"
+        ), "aliasing between local_tokens and global_tokens not allowed"
 
         memcpy_triton(
             local_tokens, global_tokens, 0, local_start_pos, local_num_tokens, True
