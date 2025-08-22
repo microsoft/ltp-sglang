@@ -263,10 +263,10 @@ def _dp_gather_via_all_reduce(
     assert global_tokens.is_contiguous()
 
     if local_tokens.shape[0] > 0 and (is_partial or get_attention_tp_rank() == 0):
-        if local_tokens.untyped_storage() is global_tokens.untyped_storage():
-            # inplace operation, create a new tensor
-            global_tokens = torch.empty_like(global_tokens)
-            
+        assert (
+            local_tokens.untyped_storage() is not global_tokens.untyped_storage()
+        ), "aliasing between global_tokens and local_tokens not allowed"
+
         memcpy_triton(
             global_tokens, local_tokens, 0, local_start_pos, local_num_tokens, False
         )
@@ -346,9 +346,10 @@ def dp_scatter(
     assert local_tokens.is_contiguous()
     assert global_tokens.is_contiguous()
     if local_tokens.shape[0] > 0:
-        if local_tokens.untyped_storage() is global_tokens.untyped_storage():
-            local_tokens = torch.empty_like(local_tokens)
-            
+        assert (
+            local_tokens.untyped_storage() is not global_tokens.untyped_storage()
+        ), "aliasing between global_tokens and local_tokens not allowed"
+
         memcpy_triton(
             local_tokens, global_tokens, 0, local_start_pos, local_num_tokens, True
         )
