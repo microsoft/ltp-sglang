@@ -229,8 +229,8 @@ class TpModelWorker:
         profile_phase = global_server_args_dict.get("profile_phase", None)
         if not profile_phase:
             start = torch.cuda.Event(enable_timing=True)
-            end = torch.cuda.Event(enable_timing=True)  
-            
+            end = torch.cuda.Event(enable_timing=True)
+
         for i in range(warmup_steps + run_steps):
             if i == warmup_steps:
                 if not profile_phase:

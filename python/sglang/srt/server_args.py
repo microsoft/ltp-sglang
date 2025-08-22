@@ -270,7 +270,7 @@ class ServerArgs:
     benchmark_num_warmup: int = 50
     benchmark_num_iters: int = 50
     profile_phase: Optional[str] = None
-    
+
     # For model weight update
     custom_weight_loader: Optional[List[str]] = None
     weight_loader_disable_mmap: bool = False
