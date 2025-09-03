@@ -1,3 +1,5 @@
+import json
+import os
 import unittest
 from types import SimpleNamespace
 
@@ -25,7 +27,8 @@ class TestPureTP(CustomTestCase):
                 "--trust-remote-code",
                 "--tp",
                 "2",
-                "--enable-deepep-moe",
+                "--moe-a2a-backend",
+                "deepep",
                 "--disable-cuda-graph",
             ],
         )
@@ -63,9 +66,36 @@ class TestDPAttn(unittest.TestCase):
                 "--dp",
                 "2",
                 "--enable-dp-attention",
-                "--enable-deepep-moe",
+                "--moe-a2a-backend",
+                "deepep",
+                "--deepep-mode",
+                "normal",
                 "--disable-cuda-graph",
+                # Test custom config
+                "--deepep-config",
+                json.dumps(
+                    {
+                        "normal_dispatch": {
+                            "num_sms": 20,
+                            "num_max_nvl_chunked_send_tokens": 16,
+                            "num_max_nvl_chunked_recv_tokens": 256,
+                            "num_max_rdma_chunked_send_tokens": 6,
+                            "num_max_rdma_chunked_recv_tokens": 128,
+                        },
+                        "normal_combine": {
+                            "num_sms": 20,
+                            "num_max_nvl_chunked_send_tokens": 6,
+                            "num_max_nvl_chunked_recv_tokens": 256,
+                            "num_max_rdma_chunked_send_tokens": 6,
+                            "num_max_rdma_chunked_recv_tokens": 128,
+                        },
+                    }
+                ),
             ],
+            env={
+                "SGL_ENABLE_JIT_DEEPGEMM": "0",
+                **os.environ,
+            },
         )
 
     @classmethod
