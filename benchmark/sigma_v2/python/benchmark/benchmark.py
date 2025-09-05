@@ -86,7 +86,9 @@ def main(cfg, deploy_cfg, backend_cfg, bszs, seq_lens):
         args.append("--disable-overlap-schedule")
     if cfg.get("enable_torch_compile"):
         args.append("--enable-torch-compile")
-
+    if cfg.get("disable_chunked_prefix_cache"):
+        args.append("--disable-chunked-prefix-cache")
+    
     args.extend(
         [
             f"--dist-init-addr={deploy_cfg.dist_init_addr}",
