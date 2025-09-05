@@ -497,6 +497,7 @@ class Scheduler(
         self._request_dispatcher = TypeBasedDispatcher(
             [
                 (TokenizedGenerateReqInput, self.handle_generate_request),
+                (List[TokenizedGenerateReqInput], self.batch_handle_generate_request),
                 (TokenizedEmbeddingReqInput, self.handle_embedding_request),
                 (FlushCacheReqInput, self.flush_cache_wrapped),
                 (AbortReq, self.abort_request),
@@ -1219,6 +1220,13 @@ class Scheduler(
             self.grammar_queue.append(req)
         else:
             self._add_request_to_queue(req)
+
+    def batch_handle_generate_request(
+        self,
+        recv_reqs: List[TokenizedGenerateReqInput],
+    ):
+        for req in recv_reqs:
+            self.handle_generate_request(req)
 
     def _add_request_to_queue(self, req: Req):
         req.queue_time_start = time.perf_counter()

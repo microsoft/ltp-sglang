@@ -475,7 +475,7 @@ class TypeBasedDispatcher:
 
     def __call__(self, obj: Any):
         for ty, fn in self._mapping:
-            if isinstance(obj, ty):
+            if isinstance(obj, ty.__origin__ if hasattr(ty, "__origin__") else ty):
                 return fn(obj)
         raise ValueError(f"Invalid object: {obj}")
 
