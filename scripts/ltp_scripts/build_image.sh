@@ -1,4 +1,6 @@
 #!/bin/bash
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
 
 # This script builds Docker images for the LTP inference environment.
 # Usage: ./build_image.sh [tag]

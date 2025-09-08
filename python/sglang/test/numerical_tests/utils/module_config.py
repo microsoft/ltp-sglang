@@ -1,3 +1,6 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+
 MODULE_CONFIGS = [
     {
         "attention_bias": False,
