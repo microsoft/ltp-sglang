@@ -1,3 +1,6 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+
 # !/bin/bash
 
 # Benchmark generation script for numerical tests

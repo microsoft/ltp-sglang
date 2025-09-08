@@ -1,8 +1,10 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+
 import json
 import os
 
 import torch
-from torch import nn
 
 from sglang.srt.distributed.parallel_state import (
     destroy_distributed_environment,

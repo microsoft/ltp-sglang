@@ -1,5 +1,7 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+
 import torch
-from torch import nn
 from transformers.models.llama.modeling_llama import LlamaRotaryEmbedding
 
 

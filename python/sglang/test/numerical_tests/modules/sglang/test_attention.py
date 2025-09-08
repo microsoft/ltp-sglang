@@ -1,4 +1,7 @@
-from typing import Any, Dict, Iterable, Optional, Tuple, Type
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+
+from typing import Any, Dict, Iterable, Optional, Tuple
 
 import torch
 from torch import nn

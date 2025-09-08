@@ -1,9 +1,9 @@
-import sys
-import uuid
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+
 
 import pytest
 import torch
-from torch import nn
 
 from sglang.srt.layers.moe.fused_moe_triton import FusedMoE
 from sglang.test.numerical_tests.modules.sglang.test_moe import MoE
