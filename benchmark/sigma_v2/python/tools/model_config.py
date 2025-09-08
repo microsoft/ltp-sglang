@@ -1,3 +1,6 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+
 import json
 from dataclasses import MISSING, dataclass, fields
 from typing import Any, Dict, Optional
