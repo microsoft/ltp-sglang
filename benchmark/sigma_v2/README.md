@@ -14,12 +14,12 @@ It works these models (GPT-3, Grok, Qwen, DeepSeek, Sigma) on H200 nodes.
     * The benchmark will loop from all the combinations of {bsz} and {seq}.
 ### Run the benchmark
 #### Single node
-```console
-#  benchmark full model Qwen with TP+EP
+```bash
+# benchmark full model Qwen with TP+EP
 bash scripts/run.sh --model qwen --mconf full --deploy tp8ep8
-#  benchmark 2 layer Qwen with DP+EP
+# benchmark 2 layer Qwen with DP+EP
 bash scripts/run.sh --model qwen --mconf 2l --deploy tp8ep8dp8
-#  benchmark and save results to a csv
+# benchmark and save results to a csv
 bash scripts/run.sh --model qwen --mconf 2l --deploy tp8ep8 --save
 # profile both prefill and decode
 bash scripts/run.sh --model qwen --mconf 2l --deploy tp8ep8 --profile both
@@ -30,7 +30,7 @@ bash scripts/run.sh --model qwen --base {customize_base} --mconf 2l --deploy tp8
 ```
 #### Multi node
 Create a multi-node YAML file under `conf/deploy` first. Let's say, tp16ep16.
-```console
+```bash
 # On node 1
 bash scripts/run.sh --model qwen --mconf full --deploy tp16ep16 --ip {master_ip}
 # On node 2
