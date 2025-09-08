@@ -1,5 +1,13 @@
 # Overview
-This benchmark pipeline tries to simplify the inference latency benchmark using SGLang and avoid having a excessively-long commandline.
+This benchmark pipeline aims to measure the latency of the different inference models.
+The benchmark will work correctly after PR42&43 are merged.
+
+There are three purpose to creating this pipeline rather than using the official commands.
+
+* It can benchmark multiple different input sizes in one input. It overrides the SGLang's scheduling policy and always run in the given batch sizes.
+* It only measures the model forward time, excluding any preprocessing and postprocessing of the requests.
+* I try to avoid long cmdlines. Official script needs one command to launch the inference server with excessively-long arguments and another command to send a request.
+
 ## Applicability
 It works these models (GPT-3, Grok, Qwen, DeepSeek, Sigma) on H200 nodes.
 ## Instructions
@@ -49,7 +57,7 @@ bash scripts/run.sh --model qwen --mconf full --deploy tp16ep16 --ip {master_ip}
         * SGLang is working on having backend options for MoE layer. It will be more useful in the future versions.
 2. `model_conf`: here it includes all the model configuration JSON file.
     * Each model has its own folder. Inside it, it should at least has a `config.json`, `tokenizer.json` and `tokenizer_config.json` to run the inference process.
-    * Since most models have repetitive layers, benchmark tends to use fewer layers. So it could have different config files, like `config_full.json`, `config_2l.json` depends on your needs. And later when run bash scripts, you could select which config to use.
+    * Since most models have repetitive layers, benchmark usually uses fewer layers. So it could have different config files, like `config_full.json`, `config_2l.json` depends on your needs. And later when run bash scripts, you could select which config to use.
 3. `python/benchmark`: benchmark Python script
 4. `python/tools`: Python script different model counters and analysis of the benchmark results with MFU computed.
 5. `scripts/run.sh`: bash scripts to run the benchmark
