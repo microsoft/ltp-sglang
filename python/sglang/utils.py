@@ -370,6 +370,11 @@ def reserve_port(host, start=30000, end=40000):
     Reserve an available port by trying to bind a socket.
     Returns a tuple (port, lock_socket) where `lock_socket` is kept open to hold the lock.
     """
+    if host in ("0.0.0.0", ""):
+        raise ValueError(
+            "Binding to all interfaces is insecure. Please specify a dedicated interface address (e.g., '127.0.0.1')."
+        )
+
     candidates = list(range(start, end))
     random.shuffle(candidates)
 
