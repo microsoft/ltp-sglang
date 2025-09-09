@@ -593,7 +593,7 @@ def is_port_available(port):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         try:
             s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            s.bind(("", port))
+            s.bind(("127.0.0.1", port))
             s.listen(1)
             return True
         except socket.error:
@@ -606,12 +606,12 @@ def get_free_port():
     # try ipv4
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.bind(("", 0))
+            s.bind(("127.0.0.1", 0))
             return s.getsockname()[1]
     except OSError:
         # try ipv6
         with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
-            s.bind(("", 0))
+            s.bind(("::1", 0))
             return s.getsockname()[1]
 
 
@@ -1298,7 +1298,7 @@ def bind_port(port):
     """Bind to a specific port, assuming it's available."""
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)  # Allows address reuse
-    sock.bind(("", port))
+    sock.bind(("127.0.0.1", port))
     sock.listen(1)
     return sock
 
@@ -1978,7 +1978,7 @@ def get_open_port() -> int:
         while True:
             try:
                 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                    s.bind(("", port))
+                    s.bind(("127.0.0.1", port))
                     return port
             except OSError:
                 port += 1  # Increment port number if already in use
@@ -1986,12 +1986,12 @@ def get_open_port() -> int:
     # try ipv4
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.bind(("", 0))
+            s.bind(("127.0.0.1", 0))
             return s.getsockname()[1]
     except OSError:
         # try ipv6
         with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as s:
-            s.bind(("", 0))
+            s.bind(("::1", 0))
             return s.getsockname()[1]
 
 
