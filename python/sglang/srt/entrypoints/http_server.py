@@ -899,8 +899,10 @@ async def vertex_generate(vertex_req: VertexGenerateReqInput, raw_request: Reque
 
 
 def _create_error_response(e):
+    # Log full stack trace internally; send generic message to user
+    logger.error(f"Exception caught: {e}", exc_info=True)
     return ORJSONResponse(
-        {"error": {"message": str(e)}}, status_code=HTTPStatus.BAD_REQUEST
+        {"error": {"message": "An internal error has occurred."}}, status_code=HTTPStatus.BAD_REQUEST
     )
 
 
