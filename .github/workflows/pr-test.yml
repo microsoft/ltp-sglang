@@ -1,5 +1,8 @@
 name: PR Test
 
+permissions:
+  contents: read
+
 on:
   schedule:
     - cron: '0 */6 * * *'  # Run every 6 hours
