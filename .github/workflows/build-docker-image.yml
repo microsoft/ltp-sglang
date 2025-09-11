@@ -28,11 +28,11 @@ jobs:
       matrix:
         include:
         - name: cuda
-          base-image: 'lmsysorg/sglang:v0.4.6.post4-cu124'
+          base-image: 'lmsysorg/sglang:v0.4.10.post2-cu126'
           platforms: linux/amd64
           runtime: cuda
         - name: rocm
-          base-image: 'rocm/sgl-dev:20250518-srt'
+          base-image: 'lmsysorg/sglang:v0.4.10.post2-rocm630-mi30x-srt'
           platforms: linux/amd64
           runtime: rocm
     steps:
