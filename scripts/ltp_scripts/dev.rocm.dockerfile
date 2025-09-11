@@ -1,5 +1,5 @@
 # Set the base image
-ARG BASE_IMAGE=rocm/sgl-dev:20250518-srt
+ARG BASE_IMAGE=lmsysorg/sglang:v0.4.10.post2-rocm630-mi30x
 FROM ${BASE_IMAGE}
 
 RUN apt-get update -y && \

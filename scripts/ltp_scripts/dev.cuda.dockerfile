@@ -1,5 +1,5 @@
 # Use the specified base image
-ARG BASE_IMAGE=lmsysorg/sglang:v0.4.6.post4-cu124
+ARG BASE_IMAGE=lmsysorg/sglang:v0.4.10.post2-cu126
 FROM ${BASE_IMAGE}
 
 RUN apt-get update -y && \
