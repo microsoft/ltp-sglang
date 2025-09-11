@@ -77,7 +77,7 @@ jobs:
           platforms: ${{ matrix.platforms }}
           context: .
           file: scripts/ltp_scripts/dev.${{ matrix.name }}.dockerfile
-          push: ${{ github.event_name == 'pull_request' }}
+          push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.tag.outputs.tags }}
           no-cache: true
           build-args: |
