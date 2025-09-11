@@ -2,8 +2,11 @@
 ARG BASE_IMAGE=lmsysorg/sglang:v0.4.6.post4-cu124
 FROM ${BASE_IMAGE}
 
+RUN apt-get update -y && \
+    apt-get install -y git-lfs
+
 # Set the working directory
-WORKDIR /app
+WORKDIR /sgl-workspace/sglang
 
 # Specify the source directory for SGLang
 ARG SGLANG_SRC=./
@@ -11,11 +14,7 @@ ARG SGLANG_SRC=./
 # Copy SGLang source files to the workspace
 COPY ${SGLANG_SRC} /sgl-workspace/sglang
 
-# Install the necessary Python packages
-RUN pip install vllm==0.8.5
-
 # Install SGLang with all optional dependencies
-RUN cd /sgl-workspace/sglang && pip install -e "python[all]"
-
-# Install the SGLang router
-RUN pip install sglang-router
+RUN python3 -m pip install --upgrade pip && \
+    pip install ./python[dev] && \
+    pip install ./python[test_ltp] --no-build-isolation
