@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sglang"
-version = "0.5.6.post2"
+version = "0.5.6.post2+ltp4.0"
 description = "SGLang is a fast serving framework for large language models and vision language models."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -114,13 +114,24 @@ test = [
   "sentence_transformers",
   "tabulate",
 ]
-dev = ["sglang[test]"]
 tracing = [
   "opentelemetry-api",
   "opentelemetry-exporter-otlp",
   "opentelemetry-exporter-otlp-proto-grpc",
   "opentelemetry-sdk",
 ]
+test_ltp = ["flash-attn==2.8.3"]
+all = ["sglang[srt]", "sglang[openai]", "sglang[anthropic]", "sglang[litellm]", "sglang[torch_memory_saver]", "sglang[decord]"]
+all_hip = ["sglang[srt_hip]", "sglang[openai]", "sglang[anthropic]", "sglang[litellm]", "sglang[decord]"]
+all_xpu = ["sglang[srt_xpu]", "sglang[openai]", "sglang[anthropic]", "sglang[litellm]", "sglang[decord]"]
+all_hpu = ["sglang[srt_hpu]", "sglang[openai]", "sglang[anthropic]", "sglang[litellm]", "sglang[decord]"]
+all_cpu = ["sglang[srt_cpu]", "sglang[openai]", "sglang[anthropic]", "sglang[litellm]", "sglang[decord]"]
+all_npu = ["sglang[srt_npu]", "sglang[openai]", "sglang[anthropic]", "sglang[litellm]", "sglang[decord]"]
+dev = ["sglang[all]", "sglang[test]"]
+dev_hip = ["sglang[all_hip]", "sglang[test]"]
+dev_xpu = ["sglang[all_xpu]", "sglang[test]"]
+dev_hpu = ["sglang[all_hpu]", "sglang[test]"]
+dev_cpu = ["sglang[all_cpu]", "sglang[test]"]
 
 [project.urls]
 "Homepage" = "https://github.com/sgl-project/sglang"
