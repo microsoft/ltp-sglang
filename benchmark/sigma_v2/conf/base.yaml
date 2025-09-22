@@ -2,7 +2,7 @@ model: ./model_conf/qwen_sigma
 load_format: dummy
 trust_remote_code: true
 
-log_level: debug 
+log_level: debug
 
 disable_radix_cache: true
 disable_overlap_schedule: true

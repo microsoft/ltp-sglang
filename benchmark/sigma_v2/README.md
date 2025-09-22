@@ -12,21 +12,21 @@ Tested on models such as GPT-3, Grok, Qwen, DeepSeek, and Sigma using H200 nodes
 In quick start, we use existing YAML configurations under `conf` folder.
 ## Model Setup
 
-1. **Create a model directory:**  
+1. **Create a model directory:**
     Under the `model_conf` folder, create a subfolder for your model (e.g., `model_conf/qwen` for Qwen).
 
-2. **Add required files:**  
+2. **Add required files:**
     Place the following files in your model's folder:
     - `config.json` (model configuration)
     - `tokenizer.json` (tokenizer data)
     - `tokenizer_config.json` (tokenizer settings)
 
-3. **Organize configuration files:**  
+3. **Organize configuration files:**
     - Rename `config.json` to `config_full.json` to represent the full model configuration.
     - To benchmark a smaller architecture (e.g., with 2 layers), duplicate `config_full.json`, modify the layer count to 2, and save as `config_2l.json`.
     - This approach allows you to easily benchmark different model variants (e.g., varying layer numbers or expert scales).
 
-4. **Customize batch size and sequence length:**  
+4. **Customize batch size and sequence length:**
     - Edit `scripts/bsz_seq.csv` to specify your desired batch sizes and sequence lengths.
     - Use the format `{bsz1,bsz2};{seq1,seq2}` (e.g., `1,2,4;128,256,512`).
     - The benchmark will iterate over all combinations of batch sizes and sequence lengths.
@@ -57,10 +57,10 @@ bash scripts/run.sh --model qwen --base {custom_base} --mconf 2l --deploy tp8ep8
 
 ### Multi-Node
 ```bash
-# On the master node 
+# On the master node
 bash scripts/run.sh --model qwen --mconf full --deploy tp16ep16 --ip {master_ip}
 
-# On a worker node 
+# On a worker node
 bash scripts/run.sh --model qwen --mconf full --deploy tp16ep16 --ip {master_ip} --rank 1
 ```
 
@@ -77,7 +77,7 @@ To tailor the benchmark to your needs, organize and modify the following directo
 
 1. **`conf`**: Contains YAML configuration files that define SGLang server arguments and deployment strategies.
     - **Common required configs:** duplicate an existing YAML file and modify the values of the fields as needed.
-      - **`base.yaml`**: basic server parameters 
+      - **`base.yaml`**: basic server parameters
       - Why we set `base.yaml` like this?
         <details>
         <summary>Click to expand example <code>base.yaml</code> configuration</summary>
@@ -109,10 +109,10 @@ To tailor the benchmark to your needs, organize and modify the following directo
         ```
 
         </details>
-      - **`deploy/`**: templates for different parallelism deployement (e.g., TP, TP+EP, DP+EP).
+      - **`deploy/`**: templates for different parallelism deployment (e.g., TP, TP+EP, DP+EP).
       - **`backend/`**: backend options for Attention (e.g.FlashAttention3, FlashInfer)
         * Note: Future SGLang releases will support backend options for the MoE layer.*
-    - **Optional configs:**  
+    - **Optional configs:**
       - **`optional/`**: offers the flexibility to use other [SGLang-supported arguments](https://docs.sglang.ai/advanced_features/server_arguments.html). I listed out a few in `default.yaml`. Add more if you want.
     ```bash
     # Assume you create YAML files like this

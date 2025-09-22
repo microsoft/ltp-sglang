@@ -1,10 +1,11 @@
-import os
-import json
 import argparse
 import asyncio
+import json
 import logging
-import numpy as np
+import os
 from typing import List
+
+import numpy as np
 from omegaconf import OmegaConf
 
 logger = logging.getLogger(__name__)
@@ -12,7 +13,10 @@ logging.basicConfig(level=logging.INFO)
 
 NON_SGLANG_CMDLINE_ARGS = ["max_tokens_generated"]
 
-def launch_inference(args: List, bszs: List, seq_lens: List, vocab_size: int, max_new_tokens: int = 2):
+
+def launch_inference(
+    args: List, bszs: List, seq_lens: List, vocab_size: int, max_new_tokens: int = 2
+):
     from sglang.srt.entrypoints.engine import _launch_subprocesses
     from sglang.srt.managers.io_struct import GenerateReqInput
     from sglang.srt.server_args import prepare_server_args
@@ -56,6 +60,7 @@ def get_vocab_size(model_config_path: str) -> int:
         config = json.load(f)
     return config.get("vocab_size", 0)
 
+
 def main(cfg, deploy_cfg, backend_cfg, optional_cfg, bszs, seq_lens):
     """
     Read yaml config and launch inference.
@@ -71,18 +76,24 @@ def main(cfg, deploy_cfg, backend_cfg, optional_cfg, bszs, seq_lens):
                 if v:
                     args.append(f"--{k.replace('_', '-')}")
                 continue
-            args.append(f"--{k.replace('_', '-')}={v}")  
+            args.append(f"--{k.replace('_', '-')}={v}")
         return args
-    
+
     base_args = yaml_to_args(cfg)
     deploy_args = yaml_to_args(deploy_cfg)
     backend_args = yaml_to_args(backend_cfg)
     optional_args = yaml_to_args(optional_cfg)
     sglang_args = base_args + deploy_args + backend_args + optional_args
-    
+
     vocab_size = get_vocab_size(cfg.get("model"))
     # we don't log the args here because SGLang will log them
-    launch_inference(sglang_args, bszs, seq_lens, vocab_size, max_new_tokens=cfg.get("max_new_tokens", 2))
+    launch_inference(
+        sglang_args,
+        bszs,
+        seq_lens,
+        vocab_size,
+        max_new_tokens=cfg.get("max_new_tokens", 2),
+    )
 
 
 def load_config(config_file):
