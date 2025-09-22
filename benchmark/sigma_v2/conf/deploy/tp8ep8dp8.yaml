@@ -3,10 +3,9 @@ dist_init_addr: ""
 nnodes: 1
 node_rank: 0
 
-tensor_parallel_size: 8
+tp_size: 8
 enable_dp_attention: true
-data_parallel_size: 8
+dp_size: 8
 enable_dp_lm_head: true
-enable_ep_moe: true
+ep_size: 8
 enable_deepep_moe: false
-expert_parallel_size: 8

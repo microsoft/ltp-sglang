@@ -4,16 +4,17 @@ set -e  # Exit on error
 usage() {
     echo "Usage: $0 [options]"
     echo "Options:"
-    echo "  --base BASE       Base configuration (default: base)"
-    echo "  --deploy DEPLOY   Deployment configuration (default: tp8ep8)"
-    echo "  --backend BACKEND Backend configuration (default: fa3)"
-    echo "  --model MODEL     Model to use (default: qwen_sigma)"
-    echo "  --mconf MODELCONF Model conf to use (default: full)"
-    echo "  --ip IP          IP address (default: eth0 IP or 10.0.0.101)"
-    echo "  --rank RANK      Rank (default: 0)"
-    echo "  --save SAVE      Save results to a specific directory (default: false)"
-    echo "  --profile TYPE   Profiling type: none, prefill, decode, both (default: none)"
-    echo "  -h, --help       Display this help message"
+    echo "  --base BASE         Base configuration (default: base)"
+    echo "  --deploy DEPLOY     Deployment configuration (default: tp8ep8)"
+    echo "  --backend BACKEND   Backend configuration (default: fa3)"
+    echo "  --optional OPTIONAL Optional other configurations (default: default)"
+    echo "  --model MODEL       Model to use (default: qwen_sigma)"
+    echo "  --mconf MODELCONF   Model conf to use (default: full)"
+    echo "  --ip IP             IP address (default: eth0 IP or 10.0.0.101)"
+    echo "  --rank RANK         Rank (default: 0)"
+    echo "  --save SAVE         Save results to a specific directory (default: false)"
+    echo "  --profile TYPE      Profiling type: none, prefill, decode, both (default: none)"
+    echo "  -h, --help          Display this help message"
     exit 1
 }
 
@@ -80,6 +81,10 @@ while [[ $# -gt 0 ]]; do
             backend="$2"
             shift 2
             ;;
+        --optional)
+            optional="$2"
+            shift 2
+            ;;
         --model)
             model="$2"
             shift 2
@@ -114,6 +119,7 @@ done
 base="${base:-base}"          # Default: default config
 deploy="${deploy:-tp8ep8}"    # Default: tp8ep8 deployment config
 backend="${backend:-fa3}"     # Default: fa3 backend config
+optional="${optional:-default}"  # Default: default optional config
 model="${model:-qwen_sigma}"  # Default: qwen_sigma model
 mconf="${mconf:-full}"        # Default: full model config
 rank="${rank:-0}"             # Default: rank 0
@@ -135,12 +141,13 @@ analysis_script="python/tools/analysis.py"
 base_config="conf/$base.yaml"
 deploy_config="conf/deploy/$deploy.yaml"
 backend_config="conf/backend/$backend.yaml"
+optional_config="conf/optional/$optional.yaml"
 model_config="model_conf/$model"
 target_model_config="${model_config}/config_${mconf}.json"
 
 bsz_seq="scripts/bsz_seq.csv"
 
-for file in "$base_config" "$deploy_config" "$backend_config" "$run_script" "$bsz_seq" "$target_model_config"; do
+for file in "$base_config" "$deploy_config" "$backend_config" "$optional_config" "$run_script" "$bsz_seq" "$target_model_config"; do
     if [[ ! -f "$file" ]]; then
         echo "Error: Required file $file not found."
         exit 1
@@ -155,6 +162,7 @@ run_params=(
     "--base" "$base_config"
     "--deploy" "$deploy_config"
     "--backend" "$backend_config"
+    "--optional" "$optional_config"
     "base.model=$model_config"
     "deploy.dist_init_addr=$ip:30000"
     "deploy.node_rank=$rank"
@@ -164,7 +172,7 @@ max_gr=$(nvidia-smi --query-gpu=clocks.max.gr --format=csv,noheader,nounits -i 0
 nvidia-smi -lgc $max_gr || echo "Warning: Could not set GPU clock"
 
 echo "Using model config: $model $mconf" | tee -a "$benchmark_log_filename"
-echo "Using configs: $base, $deploy, $backend" | tee -a "$benchmark_log_filename"
+echo "Using configs: $base, $deploy, $backend, $optional" | tee -a "$benchmark_log_filename"
 
 IFS=$';'
 while read -r bszs seq_lens; do

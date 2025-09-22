@@ -1,11 +1,8 @@
-defaults:
-  - _self_
-
 model: ./model_conf/qwen_sigma
 load_format: dummy
 
 max_running_requests: 16384
-chunked_prefill_size: 32000
+chunked_prefill_size: -1
 max_prefill_tokens: 1048576
 
 disable_custom_all_reduce: false
@@ -24,5 +21,5 @@ log_level: debug
 max_tokens_generated: 2
 
 enable_benchmark: true
-enforce_batching: true
+enforce_batching: false
 profile_phase: null

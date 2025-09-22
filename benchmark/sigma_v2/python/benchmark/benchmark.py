@@ -1,16 +1,18 @@
+import os
+import json
 import argparse
 import asyncio
 import logging
-import os
-from typing import List
-
 import numpy as np
+from typing import List
 from omegaconf import OmegaConf
 
 logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
+NON_SGLANG_CMDLINE_ARGS = ["max_tokens_generated"]
 
-def launch_inference(args: List, bszs: List, seq_lens: List, max_new_tokens: int = 2):
+def launch_inference(args: List, bszs: List, seq_lens: List, vocab_size: int, max_new_tokens: int = 2):
     from sglang.srt.entrypoints.engine import _launch_subprocesses
     from sglang.srt.managers.io_struct import GenerateReqInput
     from sglang.srt.server_args import prepare_server_args
@@ -29,7 +31,7 @@ def launch_inference(args: List, bszs: List, seq_lens: List, max_new_tokens: int
         for batch_size in bszs:
             for seq in seq_lens:
                 input_ids = [
-                    [int(x) for x in np.random.randint(0, high=16384, size=(seq,))]
+                    [int(x) for x in np.random.randint(0, high=vocab_size, size=(seq,))]
                     for _ in range(batch_size)
                 ]
                 request = GenerateReqInput(
@@ -49,74 +51,38 @@ def launch_inference(args: List, bszs: List, seq_lens: List, max_new_tokens: int
         kill_process_tree(os.getpid(), include_parent=False)
 
 
-def main(cfg, deploy_cfg, backend_cfg, bszs, seq_lens):
+def get_vocab_size(model_config_path: str) -> int:
+    with open(os.path.join(model_config_path, "config.json"), "r") as f:
+        config = json.load(f)
+    return config.get("vocab_size", 0)
+
+def main(cfg, deploy_cfg, backend_cfg, optional_cfg, bszs, seq_lens):
     """
     Read yaml config and launch inference.
     """
-    args = []
+    sglang_args = []
 
-    if cfg.get("enable_benchmark"):
-        args.append("--enable-benchmark")
-    if cfg.get("enforce_batching"):
-        args.append("--enforce-batching")
-    if cfg.get("profile_phase"):
-        args.append(f"--profile-phase={cfg.profile_phase}")
-
-    args.extend(
-        [
-            f"--model={cfg.model}",
-            f"--load-format={cfg.load_format}",
-            f"--log-level={cfg.log_level}",
-            f"--max-prefill-tokens={cfg.max_prefill_tokens}",
-            f"--chunked-prefill-size={cfg.chunked_prefill_size}",
-            f"--mem-fraction-static={cfg.mem_fraction_static}",
-            f"--max-running-requests={cfg.max_running_requests}",
-        ]
-    )
-
-    if cfg.get("trust_remote_code"):
-        args.append("--trust-remote-code")
-    if cfg.get("disable_radix_cache"):
-        args.append("--disable-radix-cache")
-    if cfg.get("disable_custom_all_reduce"):
-        args.append("--disable-custom-all-reduce")
-    if cfg.get("disable_cuda_graph"):
-        args.append("--disable-cuda-graph")
-    if cfg.get("disable_overlap_schedule"):
-        args.append("--disable-overlap-schedule")
-    if cfg.get("enable_torch_compile"):
-        args.append("--enable-torch-compile")
-    if cfg.get("disable_chunked_prefix_cache"):
-        args.append("--disable-chunked-prefix-cache")
-
-    args.extend(
-        [
-            f"--dist-init-addr={deploy_cfg.dist_init_addr}",
-            f"--nnodes={deploy_cfg.nnodes}",
-            f"--node-rank={deploy_cfg.node_rank}",
-            f"--tensor-parallel-size={deploy_cfg.tensor_parallel_size}",
-        ]
-    )
-
-    if deploy_cfg.get("enable_ep_moe"):
-        args.extend([f"--ep-size={deploy_cfg.expert_parallel_size}"])
-        if deploy_cfg.get("enable_deepep_moe") and deploy_cfg.get("nnodes") > 1:
-            args.append("--enable-deepep-moe")
-
-    if deploy_cfg.get("enable_dp_attention"):
-        args.extend(
-            [
-                "--enable-dp-attention",
-                f"--data-parallel-size={deploy_cfg.data_parallel_size}",
-            ]
-        )
-        if deploy_cfg.get("enable_dp_lm_head"):
-            args.append(f"--enable-dp-lm-head")
-        if deploy_cfg.get("enable_deepep_moe"):
-            args.append(f"--deepep-mode=normal")
-
-    args.append(f"--attention-backend={backend_cfg.attention_backend}")
-    launch_inference(args, bszs, seq_lens, max_new_tokens=cfg.get("max_new_tokens", 2))
+    def yaml_to_args(yaml_cfg):
+        args = []
+        for k, v in yaml_cfg.items():
+            if v is None or k in NON_SGLANG_CMDLINE_ARGS:
+                continue
+            if isinstance(v, bool):
+                if v:
+                    args.append(f"--{k.replace('_', '-')}")
+                continue
+            args.append(f"--{k.replace('_', '-')}={v}")  
+        return args
+    
+    base_args = yaml_to_args(cfg)
+    deploy_args = yaml_to_args(deploy_cfg)
+    backend_args = yaml_to_args(backend_cfg)
+    optional_args = yaml_to_args(optional_cfg)
+    sglang_args = base_args + deploy_args + backend_args + optional_args
+    
+    vocab_size = get_vocab_size(cfg.get("model"))
+    # we don't log the args here because SGLang will log them
+    launch_inference(sglang_args, bszs, seq_lens, vocab_size, max_new_tokens=cfg.get("max_new_tokens", 2))
 
 
 def load_config(config_file):
@@ -144,6 +110,12 @@ if __name__ == "__main__":
         help="Path to the backend configuration file",
     )
     parser.add_argument(
+        "--optional",
+        type=str,
+        default="conf/optional/default.yaml",
+        help="Path to the optional configuration file",
+    )
+    parser.add_argument(
         "--bszs",
         type=str,
         default="1",
@@ -159,14 +131,14 @@ if __name__ == "__main__":
     default_cfg = load_config(args.base)
     deploy_cfg = load_config(args.deploy)
     backend_cfg = load_config(args.backend)
+    optional_cfg = load_config(args.optional)
     if overrides:
+        # this is to support command line overrides
         cli_cfg = OmegaConf.from_dotlist(overrides)
-        if "base" in cli_cfg:
-            default_cfg = OmegaConf.merge(default_cfg, cli_cfg.base)
-        if "deploy" in cli_cfg:
-            deploy_cfg = OmegaConf.merge(deploy_cfg, cli_cfg.deploy)
-        if "backend" in cli_cfg:
-            backend_cfg = OmegaConf.merge(backend_cfg, cli_cfg.backend)
+        default_cfg = OmegaConf.merge(default_cfg, cli_cfg.get("base", {}))
+        deploy_cfg = OmegaConf.merge(deploy_cfg, cli_cfg.get("deploy", {}))
+        backend_cfg = OmegaConf.merge(backend_cfg, cli_cfg.get("backend", {}))
+        optional_cfg = OmegaConf.merge(optional_cfg, cli_cfg.get("optional", {}))
     bszs = [int(bsz) for bsz in args.bszs.split(",")]
     seq_lens = [int(seq) for seq in args.seq_lens.split(",")]
-    main(default_cfg, deploy_cfg, backend_cfg, bszs, seq_lens)
+    main(default_cfg, deploy_cfg, backend_cfg, optional_cfg, bszs, seq_lens)

@@ -55,6 +55,7 @@ bash scripts/run.sh --model qwen --mconf full --deploy tp16ep16 --ip {master_ip}
     * `deploy`: this folder includes different deployment decisions (TP, TP+EP, DP+EP).
     * `backend`: currently it only includes two backend of Attention layer (FlashAttention3 and FlashInfer).
         * SGLang is working on having backend options for MoE layer. It will be more useful in the future versions.
+    * `optional`: it contains other SGLang supported arguments. The `default.yaml` is the default decision used by SGLang.
 2. `model_conf`: here it includes all the model configuration JSON file.
     * Each model has its own folder. Inside it, it should at least has a `config.json`, `tokenizer.json` and `tokenizer_config.json` to run the inference process.
     * Since most models have repetitive layers, benchmark usually uses fewer layers. So it could have different config files, like `config_full.json`, `config_2l.json` depends on your needs. And later when run bash scripts, you could select which config to use.
