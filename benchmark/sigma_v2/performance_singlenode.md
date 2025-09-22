@@ -1,5 +1,5 @@
 # Single-node Performance
-We compare Sigma V2's inference performance on vLLM (458e74eb907f96069e6d8a4f3c9f457001fef2ea) and SGLang (v0.4.10.post2). 
+We compare Sigma V2's inference performance on vLLM (458e74eb907f96069e6d8a4f3c9f457001fef2ea) and SGLang (v0.4.10.post2).
 
 ## Long-context Performance (Sep 22, 2025)
 We evaluate a specific input size: 500 prompt length with 10,000 generation length on H200.
@@ -8,22 +8,22 @@ We evaluate a specific input size: 500 prompt length with 10,000 generation leng
     * Low-latency: **TP8EP8** of SGLang
     * High-throughput: **DP8EP8** of SGLang
 * SGLang outperforms vLLM in all batch sizes we evaluated for all deployment decisions in terms of E2E latency and throughput.
-* Though SGLang has better performance, prefill and decode MFU are still extremely low. 
+* Though SGLang has better performance, prefill and decode MFU are still extremely low.
 
 ### Why SGLang is better?
-1. **Unified CUDA Graph Execution:**  
+1. **Unified CUDA Graph Execution:**
     SGLang optimizes the decode phase by encapsulating the entire model forward pass into a single CUDA graph. In contrast, vLLM creates a separate CUDA graph for each model layer (e.g., 63 graphs for a 63-layer model). This design in vLLM introduces significant CPU overhead for each graph launch, resulting in increased GPU idle time and reduced efficiency. SGLang’s unified approach minimizes CPU launches and maximizes GPU utilization.
 
-2. **Efficient Collective Communication:**  
+2. **Efficient Collective Communication:**
     SGLang streamlines AllReduce and AllGather operations by batching data transfers between Attention and MoE into a single collective operation per batch. This larger, consolidated transfer improves bandwidth utilization and overall efficiency. vLLM, however, performs multiple smaller transfers proportional to batch size, leading to higher communication overhead and lower throughput.
 
 While other factors exist, their impact is relatively minor compared to the two main differences above.
 
 ### Additional Observations
-1. **Torch Compile Integration:**  
-    vLLM enables Torch Compile by default, whereas SGLang requires explicit activation via arguments. Torch Compile provides noticeable performance improvements for SGLang only at batch size 1; for larger batch sizes, its effect is negligible. Kernel-level execution times are generally better in vLLM due to Torch Compile. 
+1. **Torch Compile Integration:**
+    vLLM enables Torch Compile by default, whereas SGLang requires explicit activation via arguments. Torch Compile provides noticeable performance improvements for SGLang only at batch size 1; for larger batch sizes, its effect is negligible. Kernel-level execution times are generally better in vLLM due to Torch Compile.
 
-2. **DP Attention Implementation:**  
+2. **DP Attention Implementation:**
     vLLM’s DP Attention is implemented with a more complex approach, making the process of launching DP tasks more cumbersome compared to SGLang. SGLang, overall, has a clearner and better-designed architecture.
 
 3. **KV Cache Available Memory**
@@ -92,5 +92,5 @@ While other factors exist, their impact is relatively minor compared to the two 
 ### Notes
 We make some necessary modifications to the framework during evaluation to get stable results. SGLang's modifications are all updated in this repository.
 
-## To be updated by Sep 26. 
+## To be updated by Sep 26.
 TODO: Jiamin will add more in-depth analysis of why SGLang MFU is still low.
