@@ -1,0 +1,11 @@
+dist_init_addr: ""
+
+nnodes: 2
+node_rank: 0
+
+tp_size: 16
+enable_dp_attention: false
+dp_size: 1
+enable_dp_lm_head: false
+ep_size: 16
+enable_deepep_moe: false

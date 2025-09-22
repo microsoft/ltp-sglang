@@ -1,6 +1,6 @@
 moe_dense_tp_size: null
 
-disable_custom_all_reduce: false
+disable_custom_all_reduce: true
 
 disable_cuda_graph: false
 cuda_graph_max_bs: 32
