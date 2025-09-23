@@ -1,3 +1,6 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+
 import argparse
 import asyncio
 import json
@@ -17,6 +20,16 @@ NON_SGLANG_CMDLINE_ARGS = ["max_tokens_generated"]
 def launch_inference(
     args: List, bszs: List, seq_lens: List, vocab_size: int, max_new_tokens: int = 2
 ):
+    """
+    Launches SGLang inference subprocesses for benchmarking.
+
+    Args:
+        args (List): List of command-line arguments for SGLang.
+        bszs (List): List of batch sizes to test.
+        seq_lens (List): List of sequence lengths to test.
+        vocab_size (int): Vocabulary size for input token generation.
+        max_new_tokens (int): Maximum number of new tokens to generate per request.
+    """
     from sglang.srt.entrypoints.engine import _launch_subprocesses
     from sglang.srt.managers.io_struct import GenerateReqInput
     from sglang.srt.server_args import prepare_server_args
@@ -56,6 +69,15 @@ def launch_inference(
 
 
 def get_vocab_size(model_config_path: str) -> int:
+    """
+    Loads the vocabulary size from the model's config.json file.
+
+    Args:
+        model_config_path (str): Path to the model directory containing config.json.
+
+    Returns:
+        int: Vocabulary size.
+    """
     with open(os.path.join(model_config_path, "config.json"), "r") as f:
         config = json.load(f)
     return config.get("vocab_size", 0)
@@ -63,11 +85,28 @@ def get_vocab_size(model_config_path: str) -> int:
 
 def main(cfg, deploy_cfg, backend_cfg, optional_cfg, bszs, seq_lens):
     """
-    Read yaml config and launch inference.
+    Reads YAML configs, prepares SGLang command-line arguments, and launches benchmarking.
+
+    Args:
+        cfg: Base configuration (OmegaConf).
+        deploy_cfg: Deployment configuration (OmegaConf).
+        backend_cfg: Backend configuration (OmegaConf).
+        optional_cfg: Optional configuration (OmegaConf).
+        bszs (List[int]): List of batch sizes.
+        seq_lens (List[int]): List of sequence lengths.
     """
     sglang_args = []
 
     def yaml_to_args(yaml_cfg):
+        """
+        Converts a YAML config dictionary to a list of command-line arguments.
+
+        Args:
+            yaml_cfg: Configuration dictionary.
+
+        Returns:
+            List[str]: List of command-line arguments.
+        """
         args = []
         for k, v in yaml_cfg.items():
             if v is None or k in NON_SGLANG_CMDLINE_ARGS:
@@ -97,6 +136,15 @@ def main(cfg, deploy_cfg, backend_cfg, optional_cfg, bszs, seq_lens):
 
 
 def load_config(config_file):
+    """
+    Loads a YAML configuration file using OmegaConf.
+
+    Args:
+        config_file (str): Path to the YAML configuration file.
+
+    Returns:
+        OmegaConf: Loaded configuration object.
+    """
     return OmegaConf.load(config_file)
 
 
