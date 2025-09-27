@@ -24,10 +24,10 @@ While other factors exist, their impact is relatively minor compared to the two 
     vLLM enables Torch Compile by default, whereas SGLang requires explicit activation via arguments. Torch Compile provides noticeable performance improvements for SGLang only at batch size 1; for larger batch sizes, its effect is negligible. Kernel-level execution times are generally better in vLLM due to Torch Compile.
 
 2. **DP Attention Implementation:**
-    vLLM’s DP Attention is implemented with a more complex approach, making the process of launching DP tasks more cumbersome compared to SGLang. SGLang, overall, has a clearner and better-designed architecture.
+    vLLM’s DP Attention is implemented with a more complex approach, making the process of launching DP tasks more cumbersome compared to SGLang. SGLang, overall, has a cleaner and better-designed architecture.
 
 3. **KV Cache Available Memory**
-    vLLM and SGLang performs an analysis of how much memory can be reserved for KV cache, indicating the maximum generation length. Based on the logs, SGLang seems to allow a bit larger KV cache than vLLM.
+    vLLM and SGLang perform an analysis of how much memory can be reserved for KV cache, indicating the maximum generation length. Based on the logs, SGLang seems to allow a bit larger KV cache than vLLM.
 
 <details>
 <summary>Detailed Performance</summary>
