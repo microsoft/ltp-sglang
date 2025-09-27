@@ -1,0 +1,7 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+moe_dense_tp_size: null
+
+disable_custom_all_reduce: false
+
+disable_cuda_graph: false
