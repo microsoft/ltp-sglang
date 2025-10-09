@@ -824,7 +824,18 @@ class TokenizerManager:
         generators = []
         rids = []
         if getattr(obj, "parallel_sample_num", 1) == 1:
-            if self.server_args.enable_tokenizer_batch_encode:
+            if self.server_args.enforce_batching:
+                objs = [obj[i] for i in range(batch_size)]
+                tokenized_objs = await asyncio.gather(
+                    *(self._tokenize_one_request(obj) for obj in objs)
+                )
+                states = [ReqState([], False, asyncio.Event(), obj, created_time=created_time) for obj in objs]
+                for i, obj in enumerate(objs):
+                    self.rid_to_state[obj.rid] = states[i]
+                    generators.append(self._wait_one_response(obj, states[i], request))
+                    rids.append(obj.rid)
+                self.send_to_scheduler.send_pyobj(tokenized_objs)
+            elif self.server_args.enable_tokenizer_batch_encode:
                 # Validate batch tokenization constraints
                 self._validate_batch_tokenization_constraints(batch_size, obj)
 
