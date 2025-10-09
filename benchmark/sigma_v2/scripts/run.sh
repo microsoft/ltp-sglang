@@ -172,7 +172,6 @@ run_params=(
 )
 
 max_gr=$(nvidia-smi --query-gpu=clocks.max.gr --format=csv,noheader,nounits -i 0)
-nvidia-smi -lgc $max_gr || echo "Warning: Could not set GPU clock"
 
 echo "Using model config: $model $mconf" | tee -a "$benchmark_log_filename"
 echo "Using configs: $base, $deploy, $backend, $optional" | tee -a "$benchmark_log_filename"
