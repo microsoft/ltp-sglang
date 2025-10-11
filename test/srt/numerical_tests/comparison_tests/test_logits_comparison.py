@@ -29,8 +29,8 @@ class TestLogitsComparison(CompareModule):
 
         def module_init_func(module_config):
             """Initialize the Logits module with the given configuration."""
-            vocab_size = module_config["vocab_size"]
-            hidden_size = module_config["hidden_size"]
+            vocab_size = module_config.vocab_size
+            hidden_size = module_config.hidden_size
             return LogitsModule(MockLogitsConfig(vocab_size, hidden_size))
 
         def module_forward_func(sgl_module, inputs, trace_metadata):

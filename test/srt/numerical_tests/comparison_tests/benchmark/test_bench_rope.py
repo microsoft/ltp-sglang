@@ -28,7 +28,7 @@ class TestBenchRoPE(BenchModule):
             LOG_DIR,
             "bench",
             "rope",
-            f"{rope_config['head_dim']}_{rope_config['num_attention_heads']}",
+            f"{rope_config.head_dim}_{rope_config.num_attention_heads}",
             f"rope",
         )
 
@@ -42,7 +42,7 @@ class TestBenchRoPE(BenchModule):
             ).unsqueeze(0)
             # Only the seq len of hidden_states used by the RoPE module
             hidden_states = torch.tensor(
-                (query.shape[0], query.shape[2], rope_config["hidden_size"]),
+                (query.shape[0], query.shape[2], rope_config.hidden_size),
                 dtype=query.dtype,
                 device=query.device,
             )
@@ -56,16 +56,16 @@ class TestBenchRoPE(BenchModule):
             """Generate random input tensor for the Rotary Position Embedding layer."""
             query = torch.randn(
                 batch_size,
-                rope_config["num_attention_heads"],
+                rope_config.num_attention_heads,
                 seq_len,
-                rope_config["head_dim"],
+                rope_config.head_dim,
                 dtype=dtype,
             ).cuda()
             key = torch.randn(
                 batch_size,
-                rope_config["num_key_value_heads"],
+                rope_config.num_key_value_heads,
                 seq_len,
-                rope_config["head_dim"],
+                rope_config.head_dim,
                 dtype=dtype,
             ).cuda()
             return {"query": query, "key": key}

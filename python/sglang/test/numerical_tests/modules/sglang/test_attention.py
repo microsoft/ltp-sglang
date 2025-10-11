@@ -6,7 +6,7 @@ from typing import Any, Dict, Iterable, Optional, Tuple, Type
 import torch
 from torch import nn
 
-from sglang import ServerArgs
+from sglang.srt.server_args import ServerArgs
 from sglang.srt.configs.model_config import AttentionArch
 from sglang.srt.distributed.parallel_state import (
     get_tensor_model_parallel_rank,
@@ -220,7 +220,8 @@ class MockModelRunner:
             enable_memory_saver=False,
         )
         # Required by torch native backend
-        self.server_args = ServerArgs(model_path="fake_model_path")
+        self.server_args = object.__new__(ServerArgs)
+        self.server_args.model_path = "fake_model_path"
 
 
 class AttentionLayerTester:

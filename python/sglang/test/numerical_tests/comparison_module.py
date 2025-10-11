@@ -8,6 +8,7 @@ import torch
 
 from sglang.srt.distributed.parallel_state import (
     destroy_distributed_environment,
+    destroy_expert_parallel,
     destroy_model_parallel,
     init_distributed_environment,
     initialize_model_parallel,
@@ -50,6 +51,7 @@ class CompareModule:
 
     def teardown_method(self, method):
         destroy_model_parallel()
+        destroy_expert_parallel()
         destroy_distributed_environment()
 
     def _test_module_comparison(

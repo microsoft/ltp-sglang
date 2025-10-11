@@ -32,7 +32,7 @@ class TestBenchLogits(BenchModule):
         """Run the sglang Logits with random input and trace tensors."""
         # Initialize the Logits module with the given configurations
         logits_module = nn.Linear(
-            logits_config["hidden_size"], logits_config["vocab_size"]
+            logits_config.hidden_size, logits_config.vocab_size
         )
         logits_module.bias = None  # Ensure no bias term is used
         if weight_prefix.count("random") > 0:
@@ -46,7 +46,7 @@ class TestBenchLogits(BenchModule):
             LOG_DIR,
             "bench",
             "logits",
-            f"{logits_config['vocab_size']}_{logits_config['hidden_size']}",
+            f"{logits_config.vocab_size}_{logits_config.hidden_size}",
             f"weights-{weight_prefix}",
         )
 
@@ -54,7 +54,7 @@ class TestBenchLogits(BenchModule):
         def random_input_func(batch_size, seq_len, dtype=TARGET_DTYPE):
             """Generate random input tensor for the Logits layer."""
             hidden_states = torch.randn(
-                batch_size, seq_len, logits_config["hidden_size"], dtype=dtype
+                batch_size, seq_len, logits_config.hidden_size, dtype=dtype
             ).cuda()
             return {"hidden_states": hidden_states}
 

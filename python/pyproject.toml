@@ -109,6 +109,7 @@ test = [
     "peft",
     "sentence_transformers",
     "pytest",
+    "pytest-asyncio",
 ]
 test_ltp = ["flash-attn==2.8.3"]
 all = ["sglang[srt]", "sglang[openai]", "sglang[anthropic]", "sglang[litellm]", "sglang[torch_memory_saver]", "sglang[decord]"]

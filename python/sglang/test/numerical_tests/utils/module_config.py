@@ -1,7 +1,10 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-MODULE_CONFIGS = [
+from transformers import PretrainedConfig
+
+
+MODULE_CONFIGS = list(map(PretrainedConfig.from_dict, [
     {
         "attention_bias": False,
         "hidden_act": "silu",
@@ -32,5 +35,5 @@ MODULE_CONFIGS = [
         "vocab_size": 200064,
         "sliding_window": 4096,
         "_attn_implementation": "flash_attention_2",
-    }
-]
+    },
+]))
