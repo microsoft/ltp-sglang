@@ -5,7 +5,7 @@ from typing import Optional, Tuple
 
 import torch
 from torch import nn
-from transformers import Pretrainedconfig
+from transformers import PretrainedConfig
 from transformers.modeling_flash_attention_utils import FlashAttentionKwargs
 from transformers.modeling_utils import ALL_ATTENTION_FUNCTIONS
 from transformers.processing_utils import Unpack
@@ -19,7 +19,7 @@ SigmaConfig = None
 class GQAAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
-    def __init__(self, config: Pretrainedconfig):
+    def __init__(self, config: PretrainedConfig):
         super().__init__()
         self.config = config
         self.head_dim = config.head_dim

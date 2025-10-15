@@ -8,7 +8,7 @@ import uuid
 import torch
 from safetensors.torch import save_file
 from torch import nn
-from transformers import Pretrainedconfig
+from transformers import PretrainedConfig
 
 from sglang.test.numerical_tests.utils.common import (
     BENCH_CONFIG_FILE,
@@ -21,7 +21,7 @@ from sglang.test.numerical_tests.utils.common import (
 class BenchConfig:
     """Base class for test configurations."""
 
-    module_config: Pretrainedconfig = {}
+    module_config: PretrainedConfig = {}
     real_weight_prefix: str = ""
     log_dir: str = ""
     batch_sizes: list[int] = []
