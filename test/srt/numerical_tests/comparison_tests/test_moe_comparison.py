@@ -37,7 +37,7 @@ class TestMoEComparison(CompareModule):
             # Reshape the input tensor for the SGLang module
             input_tensor = (
                 inputs["hidden_states"]
-                .view(-1, sgl_module.config["hidden_size"])
+                .view(-1, sgl_module.config.hidden_size)
                 .cuda()
             )
             # Forward the module
@@ -46,7 +46,7 @@ class TestMoEComparison(CompareModule):
             return output.view(
                 trace_metadata.batch_size,
                 trace_metadata.seq_len,
-                sgl_module.config["hidden_size"],
+                sgl_module.config.hidden_size,
             )
 
         self._test_module_comparison(

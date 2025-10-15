@@ -7,6 +7,7 @@ import os
 import torch
 from safetensors import safe_open
 from torch import nn
+from transformers import PretrainedConfig
 
 from sglang.test.numerical_tests.utils.common import (
     BENCH_CONFIG_FILE,
@@ -130,6 +131,8 @@ def load_test_config(data_folder):
         test_config["dtype"] = getattr(
             torch, test_config["dtype"].replace("torch.", ""), torch.bfloat16
         )
+    if "module_config" in test_config:
+        test_config["module_config"] = PretrainedConfig.from_dict(test_config["module_config"])
 
     return test_config
 
