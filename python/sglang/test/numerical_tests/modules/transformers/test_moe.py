@@ -136,9 +136,7 @@ class MoE(nn.Module):
         )
         self.gate = MoEGate(config)
         if config.n_shared_experts is not None and config.n_shared_experts > 0:
-            intermediate_size = (
-                config.moe_intermediate_size * config.n_shared_experts
-            )
+            intermediate_size = config.moe_intermediate_size * config.n_shared_experts
             self.shared_experts = MLP(
                 config=config, intermediate_size=intermediate_size
             )

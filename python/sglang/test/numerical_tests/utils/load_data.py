@@ -132,7 +132,9 @@ def load_test_config(data_folder):
             torch, test_config["dtype"].replace("torch.", ""), torch.bfloat16
         )
     if "module_config" in test_config:
-        test_config["module_config"] = PretrainedConfig.from_dict(test_config["module_config"])
+        test_config["module_config"] = PretrainedConfig.from_dict(
+            test_config["module_config"]
+        )
 
     return test_config
 

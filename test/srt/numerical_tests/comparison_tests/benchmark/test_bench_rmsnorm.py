@@ -34,9 +34,7 @@ class TestBenchRMSNorm(BenchModule):
     def test_bench_rmsnorm(self, module_config, weight_prefix):
         """Run the sglang RMSNorm with random input and trace tensors."""
         # Initialize the RMSNorm module with the given configuration
-        rmsnorm_module = RMSNorm(
-            module_config.hidden_size, module_config.rms_norm_eps
-        )
+        rmsnorm_module = RMSNorm(module_config.hidden_size, module_config.rms_norm_eps)
         if weight_prefix.count("random") > 0:
             load_random_weights(rmsnorm_module, TARGET_DTYPE)
         else:

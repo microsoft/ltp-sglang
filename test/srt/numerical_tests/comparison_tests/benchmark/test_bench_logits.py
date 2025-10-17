@@ -31,9 +31,7 @@ class TestBenchLogits(BenchModule):
     def test_bench_logits(self, logits_config, weight_prefix):
         """Run the sglang Logits with random input and trace tensors."""
         # Initialize the Logits module with the given configurations
-        logits_module = nn.Linear(
-            logits_config.hidden_size, logits_config.vocab_size
-        )
+        logits_module = nn.Linear(logits_config.hidden_size, logits_config.vocab_size)
         logits_module.bias = None  # Ensure no bias term is used
         if weight_prefix.count("random") > 0:
             load_random_weights(logits_module, TARGET_DTYPE)

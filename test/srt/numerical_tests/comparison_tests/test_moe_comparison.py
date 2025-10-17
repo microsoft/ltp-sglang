@@ -36,9 +36,7 @@ class TestMoEComparison(CompareModule):
             """Forward function for the MoE module."""
             # Reshape the input tensor for the SGLang module
             input_tensor = (
-                inputs["hidden_states"]
-                .view(-1, sgl_module.config.hidden_size)
-                .cuda()
+                inputs["hidden_states"].view(-1, sgl_module.config.hidden_size).cuda()
             )
             # Forward the module
             output = sgl_module(input_tensor)
