@@ -51,7 +51,7 @@ class TestBenchAttentionLayer(BenchModule):
             LOG_DIR,
             "bench",
             "attention",
-            f"{module_config['hidden_size']}_{module_config['num_attention_heads']}",
+            f"{module_config.hidden_size}_{module_config.num_attention_heads}",
             f"weights-{weight_prefix}",
         )
 
@@ -59,7 +59,7 @@ class TestBenchAttentionLayer(BenchModule):
         def random_input_func(batch_size, seq_len, dtype=TARGET_DTYPE):
             """Generate random input tensor for the Attention Layer module."""
             hidden_states = torch.randn(
-                batch_size, seq_len, module_config["hidden_size"], dtype=dtype
+                batch_size, seq_len, module_config.hidden_size, dtype=dtype
             ).cuda()
             return {"hidden_states": hidden_states}
 

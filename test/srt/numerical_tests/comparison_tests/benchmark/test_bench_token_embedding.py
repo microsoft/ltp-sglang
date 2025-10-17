@@ -34,8 +34,8 @@ class TestBenchTokenEmbedding(BenchModule):
         """Run the sglang Token Embedding with random input and trace tensors."""
         # Initialize the embedding module with the given configurations
         embedding_module = nn.Embedding(
-            embedding_config["vocab_size"],
-            embedding_config["hidden_size"],
+            embedding_config.vocab_size,
+            embedding_config.hidden_size,
         )
         if weight_prefix.count("random") > 0:
             load_random_weights(embedding_module, TARGET_DTYPE)
@@ -50,7 +50,7 @@ class TestBenchTokenEmbedding(BenchModule):
             LOG_DIR,
             "bench",
             "token_embedding",
-            f"{embedding_config['hidden_size']}_{embedding_config['vocab_size']}",
+            f"{embedding_config.hidden_size}_{embedding_config.vocab_size}",
             f"weights-{weight_prefix}",
         )
 
@@ -59,7 +59,7 @@ class TestBenchTokenEmbedding(BenchModule):
             """Generate random input tensor for the Token Embedding layer."""
             input_ids = torch.randint(
                 0,
-                embedding_config["vocab_size"],
+                embedding_config.vocab_size,
                 (batch_size, seq_len),
                 dtype=torch.int64,
             ).cuda()

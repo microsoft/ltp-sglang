@@ -34,9 +34,7 @@ class TestBenchRMSNorm(BenchModule):
     def test_bench_rmsnorm(self, module_config, weight_prefix):
         """Run the sglang RMSNorm with random input and trace tensors."""
         # Initialize the RMSNorm module with the given configuration
-        rmsnorm_module = RMSNorm(
-            module_config["hidden_size"], module_config["rms_norm_eps"]
-        )
+        rmsnorm_module = RMSNorm(module_config.hidden_size, module_config.rms_norm_eps)
         if weight_prefix.count("random") > 0:
             load_random_weights(rmsnorm_module, TARGET_DTYPE)
         else:
@@ -48,7 +46,7 @@ class TestBenchRMSNorm(BenchModule):
             LOG_DIR,
             "bench",
             "rmsnorm",
-            f"{module_config['hidden_size']}-{module_config['rms_norm_eps']}",
+            f"{module_config.hidden_size}-{module_config.rms_norm_eps}",
             f"weights-{weight_prefix}",
         )
 
@@ -56,7 +54,7 @@ class TestBenchRMSNorm(BenchModule):
         def random_input_func(batch_size, seq_len, dtype=TARGET_DTYPE):
             """Generate random input tensor for the RMSNorm module."""
             hidden_states = torch.randn(
-                batch_size, seq_len, module_config["hidden_size"], dtype=dtype
+                batch_size, seq_len, module_config.hidden_size, dtype=dtype
             ).cuda()
             return {"hidden_states": hidden_states}
 

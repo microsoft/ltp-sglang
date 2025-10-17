@@ -48,7 +48,7 @@ class TestBenchMoE(BenchModule):
             LOG_DIR,
             "bench",
             "moe",
-            f"{module_config['hidden_size']}_{module_config['num_experts_per_tok']}_{module_config['n_routed_experts']}",
+            f"{module_config.hidden_size}_{module_config.num_experts_per_tok}_{module_config.n_routed_experts}",
             f"weights-{weight_prefix}",
         )
 
@@ -56,7 +56,7 @@ class TestBenchMoE(BenchModule):
         def random_input_func(batch_size, seq_len, dtype=TARGET_DTYPE):
             """Generate random input tensor for the MoE module."""
             hidden_states = torch.randn(
-                batch_size, seq_len, module_config["hidden_size"], dtype=dtype
+                batch_size, seq_len, module_config.hidden_size, dtype=dtype
             ).cuda()
             return {"hidden_states": hidden_states}
 

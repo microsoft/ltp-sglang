@@ -13,9 +13,9 @@ from transformers.activations import ACT2FN
 class MLP(nn.Module):
     def __init__(self, config, intermediate_size=None):
         super().__init__()
-        self.hidden_size = config["hidden_size"]
-        self.intermediate_size = intermediate_size or config["intermediate_size"]
-        act_fn = config["hidden_act"]
+        self.hidden_size = config.hidden_size
+        self.intermediate_size = intermediate_size or config.intermediate_size
+        act_fn = config.hidden_act
         self.act_fn = ACT2FN[act_fn]
 
         self.gate_proj = nn.Linear(self.hidden_size, self.intermediate_size, bias=False)
@@ -33,18 +33,18 @@ class MoEGate(nn.Module):
     def __init__(self, config):
         super().__init__()
         self.config = config
-        self.top_k = config["num_experts_per_tok"]
-        self.n_routed_experts = config["n_routed_experts"]
-        self.routed_scaling_factor = config["routed_scaling_factor"]
-        self.scoring_func = config["scoring_func"]
-        self.seq_aux = config["seq_aux"]
-        self.topk_method = config["topk_method"]
+        self.top_k = config.num_experts_per_tok
+        self.n_routed_experts = config.n_routed_experts
+        self.routed_scaling_factor = config.routed_scaling_factor
+        self.scoring_func = config.scoring_func
+        self.seq_aux = config.seq_aux
+        self.topk_method = config.topk_method
         self.n_group = 1
         self.topk_group = 1
 
         # topk selection algorithm
-        self.norm_topk_prob = config["norm_topk_prob"]
-        self.gating_dim = config["hidden_size"]
+        self.norm_topk_prob = config.norm_topk_prob
+        self.gating_dim = config.hidden_size
         self.weight = nn.Parameter(
             torch.empty((self.n_routed_experts, self.gating_dim))
         )
@@ -124,21 +124,19 @@ class MoE(nn.Module):
     def __init__(self, config):
         super().__init__()
         self.config = config
-        self.num_experts_per_tok = config["num_experts_per_tok"]
+        self.num_experts_per_tok = config.num_experts_per_tok
 
-        self.experts_per_rank = config["n_routed_experts"]
+        self.experts_per_rank = config.n_routed_experts
         self.ep_rank = 0
         self.experts = nn.ModuleList(
             [
-                MLP(config, intermediate_size=config["moe_intermediate_size"])
-                for _ in range(config["n_routed_experts"])
+                MLP(config, intermediate_size=config.moe_intermediate_size)
+                for _ in range(config.n_routed_experts)
             ]
         )
         self.gate = MoEGate(config)
-        if config["n_shared_experts"] is not None and config["n_shared_experts"] > 0:
-            intermediate_size = (
-                config["moe_intermediate_size"] * config["n_shared_experts"]
-            )
+        if config.n_shared_experts is not None and config.n_shared_experts > 0:
+            intermediate_size = config.moe_intermediate_size * config.n_shared_experts
             self.shared_experts = MLP(
                 config=config, intermediate_size=intermediate_size
             )
@@ -150,8 +148,8 @@ class MoE(nn.Module):
         hidden_states = hidden_states.view(-1, hidden_states.shape[-1])
         y = self.moe_infer(hidden_states, topk_idx, topk_weight).view(*orig_shape)
         if (
-            self.config["n_shared_experts"] is not None
-            and self.config["n_shared_experts"] > 0
+            self.config.n_shared_experts is not None
+            and self.config.n_shared_experts > 0
         ):
             y = y + self.shared_experts(identity)
         return y

@@ -6,6 +6,7 @@ from typing import Iterable, Tuple, Union
 import torch
 import torch.nn.functional as F
 from torch import nn
+from transformers import PretrainedConfig
 
 from sglang.srt.distributed import (
     get_tensor_model_parallel_world_size,
@@ -45,7 +46,7 @@ def fused_topk_sigmoid(
 class MoE(nn.Module):
     def __init__(
         self,
-        config: dict,
+        config: PretrainedConfig,
         MoEImpl: Union[EPMoE, FusedMoE],
         prefix: str = "",
     ):
@@ -56,10 +57,10 @@ class MoE(nn.Module):
             print(f"Error getting tensor model parallel world size: {e}")
             self.tp_size = 1
 
-        if self.tp_size and self.tp_size > config["n_routed_experts"]:
+        if self.tp_size and self.tp_size > config.n_routed_experts:
             raise ValueError(
                 f"Tensor parallel size {self.tp_size} is greater than "
-                f"the number of experts {config['n_routed_experts']}."
+                f"the number of experts {config.n_routed_experts}."
             )
 
         routing_func = None
@@ -68,11 +69,11 @@ class MoE(nn.Module):
             routing_func = fused_topk_sigmoid
 
         self.experts = MoEImpl(
-            num_experts=config["n_routed_experts"],
-            top_k=config["num_experts_per_tok"],
-            hidden_size=config["hidden_size"],
-            intermediate_size=config["moe_intermediate_size"],
-            renormalize=config["norm_topk_prob"],
+            num_experts=config.n_routed_experts,
+            top_k=config.num_experts_per_tok,
+            hidden_size=config.hidden_size,
+            intermediate_size=config.moe_intermediate_size,
+            renormalize=config.norm_topk_prob,
             custom_routing_function=routing_func,
             prefix=add_prefix("experts", prefix),
             tp_size=self.tp_size,
@@ -80,8 +81,8 @@ class MoE(nn.Module):
         self.MoEImpl = MoEImpl
 
         self.gate = ReplicatedLinear(
-            config["hidden_size"],
-            config["n_routed_experts"],
+            config.hidden_size,
+            config.n_routed_experts,
             bias=False,
             prefix=add_prefix("gate", prefix),
         )
@@ -112,7 +113,7 @@ class MoE(nn.Module):
             ckpt_gate_proj_name="gate_proj",
             ckpt_down_proj_name="down_proj",
             ckpt_up_proj_name="up_proj",
-            num_experts=self.config["n_routed_experts"],
+            num_experts=self.config.n_routed_experts,
         )
 
         params_dict = dict(self.named_parameters())

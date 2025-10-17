@@ -25,11 +25,11 @@ class TestRoPEComparison(CompareModule):
         def module_init_func(module_config):
             """Initialize the RoPE module with the given configuration."""
             return get_rope(
-                head_size=module_config["head_dim"],
-                rotary_dim=module_config["head_dim"],
-                max_position=module_config["max_position_embeddings"],
-                base=module_config["rope_theta"],
-                rope_scaling=module_config["rope_scaling"],
+                head_size=module_config.head_dim,
+                rotary_dim=module_config.head_dim,
+                max_position=module_config.max_position_embeddings,
+                base=module_config.rope_theta,
+                rope_scaling=module_config.rope_scaling,
             )
 
         def module_forward_func(sgl_module, inputs, trace_metadata):

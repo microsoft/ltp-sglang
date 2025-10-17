@@ -111,6 +111,7 @@ test = [
   "pandas",
   "peft",
   "pytest",
+  "pytest-asyncio",
   "sentence_transformers",
   "tabulate",
 ]

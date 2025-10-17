@@ -2,6 +2,7 @@
 # Licensed under the MIT License.
 
 import torch
+from transformers import PretrainedConfig
 from transformers.models.llama.modeling_llama import LlamaRotaryEmbedding
 
 
@@ -28,10 +29,8 @@ class RotaryEmbedding(LlamaRotaryEmbedding):
     mechanisms.
     """
 
-    def __init__(self, config: dict):
-        config_mock = type("PretrainedConfig", (), config)
-
-        super().__init__(config_mock)
+    def __init__(self, config: PretrainedConfig):
+        super().__init__(config)
 
     def forward(self, position_ids, query, key, hidden_states):
         """Forward pass for the Rotary Position Embedding layer."""

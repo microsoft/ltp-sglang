@@ -47,16 +47,16 @@ class TestAttentionComparison(CompareModule):
         def module_init_func(module_config):
             """Initialize the Attention module with the given configuration."""
             return AttentionLayer(
-                hidden_size=module_config["hidden_size"],
-                num_heads=module_config["num_attention_heads"],
-                num_kv_heads=module_config["num_key_value_heads"],
-                rope_theta=module_config["rope_theta"],
-                rope_scaling=module_config["rope_scaling"],
-                max_position_embeddings=module_config["max_position_embeddings"],
-                head_dim=module_config["head_dim"],
-                rms_norm_eps=module_config["rms_norm_eps"],
-                attention_bias=module_config["attention_bias"],
-                qk_layernorm=module_config["qk_layernorm"],
+                hidden_size=module_config.hidden_size,
+                num_heads=module_config.num_attention_heads,
+                num_kv_heads=module_config.num_key_value_heads,
+                rope_theta=module_config.rope_theta,
+                rope_scaling=module_config.rope_scaling,
+                max_position_embeddings=module_config.max_position_embeddings,
+                head_dim=module_config.head_dim,
+                rms_norm_eps=module_config.rms_norm_eps,
+                attention_bias=module_config.attention_bias,
+                qk_layernorm=module_config.qk_layernorm,
             )
 
         def module_forward_func(sgl_module, inputs, trace_metadata):
