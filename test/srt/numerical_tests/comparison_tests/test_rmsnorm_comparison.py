@@ -25,8 +25,8 @@ class TestRMSNormComparison(CompareModule):
         def module_init_func(module_config):
             """Initialize the RMSNorm module with the given configuration."""
             return RMSNorm(
-                hidden_size=module_config["hidden_size"],
-                eps=module_config["rms_norm_eps"],
+                hidden_size=module_config.hidden_size,
+                eps=module_config.rms_norm_eps,
             )
 
         def module_forward_func(sgl_module, inputs, trace_metadata):

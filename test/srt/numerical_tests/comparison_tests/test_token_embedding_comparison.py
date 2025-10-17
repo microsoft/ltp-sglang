@@ -25,8 +25,8 @@ class TestTokenEmbeddingComparison(CompareModule):
         def module_init_func(module_config):
             """Initialize the Token Embedding module with the given configuration."""
             return VocabParallelEmbedding(
-                module_config["vocab_size"],
-                module_config["hidden_size"],
+                module_config.vocab_size,
+                module_config.hidden_size,
             )
 
         def module_forward_func(sgl_module, inputs, trace_metadata):

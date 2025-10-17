@@ -5,6 +5,7 @@ from typing import Optional, Tuple
 
 import torch
 from torch import nn
+from transformers import PretrainedConfig
 from transformers.modeling_flash_attention_utils import FlashAttentionKwargs
 from transformers.modeling_utils import ALL_ATTENTION_FUNCTIONS
 from transformers.processing_utils import Unpack
@@ -18,37 +19,37 @@ SigmaConfig = None
 class GQAAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
-    def __init__(self, config: dict):
+    def __init__(self, config: PretrainedConfig):
         super().__init__()
         self.config = config
-        self.head_dim = config["head_dim"]
+        self.head_dim = config.head_dim
         self.num_key_value_groups = (
-            config["num_attention_heads"] // config["num_key_value_heads"]
+            config.num_attention_heads // config.num_key_value_heads
         )
         self.scaling = self.head_dim**-0.5
         self.is_causal = True
 
         self.q_proj = nn.Linear(
-            config["hidden_size"],
-            config["num_attention_heads"] * self.head_dim,
-            bias=config["attention_bias"],
+            config.hidden_size,
+            config.num_attention_heads * self.head_dim,
+            bias=config.attention_bias,
         )
         self.k_proj = nn.Linear(
-            config["hidden_size"],
-            config["num_key_value_heads"] * self.head_dim,
-            bias=config["attention_bias"],
+            config.hidden_size,
+            config.num_key_value_heads * self.head_dim,
+            bias=config.attention_bias,
         )
         self.v_proj = nn.Linear(
-            config["hidden_size"],
-            config["num_key_value_heads"] * self.head_dim,
-            bias=config["attention_bias"],
+            config.hidden_size,
+            config.num_key_value_heads * self.head_dim,
+            bias=config.attention_bias,
         )
         self.o_proj = nn.Linear(
-            config["num_attention_heads"] * self.head_dim,
-            config["hidden_size"],
-            bias=config["attention_bias"],
+            config.num_attention_heads * self.head_dim,
+            config.hidden_size,
+            bias=config.attention_bias,
         )
-        if self.config["qk_layernorm"]:
+        if self.config.qk_layernorm:
             self.q_layernorm = RMSNorm(self.head_dim)
             self.k_layernorm = RMSNorm(self.head_dim)
 
@@ -67,7 +68,7 @@ class GQAAttention(nn.Module):
         key_states = self.k_proj(hidden_states).view(hidden_shape).transpose(1, 2)
         value_states = self.v_proj(hidden_states).view(hidden_shape).transpose(1, 2)
 
-        if self.config["qk_layernorm"]:
+        if self.config.qk_layernorm:
             query_states = self.q_layernorm(query_states)
             key_states = self.k_layernorm(key_states)
 
@@ -80,9 +81,7 @@ class GQAAttention(nn.Module):
         )
 
         # attn type
-        attention_interface = ALL_ATTENTION_FUNCTIONS[
-            self.config["_attn_implementation"]
-        ]
+        attention_interface = ALL_ATTENTION_FUNCTIONS[self.config._attn_implementation]
 
         attn_output, attn_weights = attention_interface(
             self,
