@@ -5,9 +5,9 @@ dist_init_addr: ""
 nnodes: 1
 node_rank: 0
 
-tp_size: 2
+tp_size: 8
 enable_dp_attention: false
 dp_size: 1
 enable_dp_lm_head: false
-ep_size: 2
+ep_size: 8
 enable_deepep_moe: false

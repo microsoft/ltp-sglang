@@ -10,7 +10,6 @@ disable_radix_cache: true
 disable_overlap_schedule: true
 disable_chunked_prefix_cache: true
 enable_torch_compile: false
-
 mem_fraction_static: 0.5
 
 max_running_requests: 16384
@@ -20,5 +19,5 @@ chunked_prefill_size: -1
 max_tokens_generated: 2
 
 enable_benchmark: true
-enforce_batching: false
+enforce_batching: true 
 profile_phase: null
