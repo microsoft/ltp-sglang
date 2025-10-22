@@ -1,13 +1,15 @@
 import os
+import argparse
 import socket
 import time
-from typing import List, Tuple
+from typing import List
 
 import ray
 import torch
 import torch.distributed as dist
 
 from sglang.srt.distributed import init_distributed_environment
+import pandas as pd
 from sglang.srt.distributed.communication_op import (
     tensor_model_parallel_all_reduce,
 )
@@ -17,6 +19,7 @@ from sglang.srt.distributed.parallel_state import (
     initialize_model_parallel,
 )
 
+HIDDEN_SIZE = 5120
 
 def get_open_port() -> int:
     """Get an available port for distributed communication."""
@@ -35,8 +38,9 @@ def benchmark_allreduce(
     world_size: int,
     rank: int,
     distributed_init_port: int,
-    test_sizes: List[int],
-    dtypes: List[torch.dtype],
+    phases: List[str],
+    bszs: List[int],
+    seq_lens: int,
     warmup_iters: int = 10,
     benchmark_iters: int = 100,
 ):
@@ -64,43 +68,63 @@ def benchmark_allreduce(
     
     results = []
     
-    for sz in test_sizes:
-        for dtype in dtypes:
-            dtype_name = str(dtype).split('.')[-1]
-            
-            # Warmup
+    for phase in phases:
+        for bsz in bszs:
+            sz = bsz * HIDDEN_SIZE * seq_lens if phase == 'prefill' else bsz * HIDDEN_SIZE
+            dtype = torch.bfloat16
             for _ in range(warmup_iters):
                 data = torch.randint(1, 16, (sz,), dtype=dtype, device=device)
                 dist.all_reduce(data, group=group)
                 torch.cuda.synchronize()
             
-            # Benchmark NCCL allreduce
+            # Benchmark every run of NCCL allreduce
             nccl_times = []
+            data = torch.randint(1, 16, (sz,), dtype=dtype, device=device)
             for _ in range(benchmark_iters):
-                data = torch.randint(1, 16, (sz,), dtype=dtype, device=device)
                 torch.cuda.synchronize()
                 start = time.perf_counter()
                 dist.all_reduce(data, group=group)
                 torch.cuda.synchronize()
                 end = time.perf_counter()
-                nccl_times.append((end - start) * 1000)  # Convert to ms
+                nccl_times.append((end - start) * 1000 * 1000)  # Convert to us
+            
+            # Benchmark average over multiple runs of NCCL allreduce
+            data = torch.randint(1, 16, (sz,), dtype=dtype, device=device)
+            torch.cuda.synchronize()
+            start = time.perf_counter()
+            for _ in range(benchmark_iters):
+                dist.all_reduce(data, group=group)
+            torch.cuda.synchronize()
+            end = time.perf_counter()
+            avg_nccl_time = (end - start) / benchmark_iters * 1000 * 1000  # Convert to us
             
             # Warmup custom allreduce
+            data = torch.randint(1, 16, (sz,), dtype=dtype, device=device)
             for _ in range(warmup_iters):
-                data = torch.randint(1, 16, (sz,), dtype=dtype, device=device)
                 _ = tensor_model_parallel_all_reduce(data)
-                torch.cuda.synchronize()
+            torch.cuda.synchronize()
             
             # Benchmark custom allreduce
             custom_times = []
+            avg_custom_time = 0.0
+            data = torch.randint(1, 16, (sz,), dtype=dtype, device=device)
             for _ in range(benchmark_iters):
-                data = torch.randint(1, 16, (sz,), dtype=dtype, device=device)
                 torch.cuda.synchronize()
                 start = time.perf_counter()
                 _ = tensor_model_parallel_all_reduce(data)
                 torch.cuda.synchronize()
                 end = time.perf_counter()
-                custom_times.append((end - start) * 1000)  # Convert to ms
+                custom_times.append((end - start) * 1000 * 1000)  # Convert to us
+            
+            data = torch.randint(1, 16, (sz,), dtype=dtype, device=device)
+            torch.cuda.synchronize()
+            start = time.perf_counter()
+            for _ in range(benchmark_iters):
+                _ = tensor_model_parallel_all_reduce(data)
+            torch.cuda.synchronize()
+            end = time.perf_counter()
+            avg_custom_time = (end - start) / benchmark_iters * 1000 * 1000  # Convert to us
+            
             
             # Calculate statistics
             nccl_avg = sum(nccl_times) / len(nccl_times)
@@ -113,16 +137,17 @@ def benchmark_allreduce(
             
             results.append({
                 'rank': rank,
-                'size': sz,
-                'dtype': dtype_name,
+                'phase': phase,
+                'bsz': bsz,
                 'size_bytes': sz * torch.tensor([], dtype=dtype).element_size(),
-                'nccl_avg_ms': nccl_avg,
-                'nccl_min_ms': nccl_min,
-                'nccl_max_ms': nccl_max,
-                'custom_avg_ms': custom_avg,
-                'custom_min_ms': custom_min,
-                'custom_max_ms': custom_max,
-                'speedup': nccl_avg / custom_avg if custom_avg > 0 else 0,
+                'nccl_avg_us': nccl_avg,
+                'nccl_min_us': nccl_min,
+                'nccl_max_us': nccl_max,
+                'nccl_avg_run_us': avg_nccl_time,
+                'custom_avg_us': custom_avg,
+                'custom_min_us': custom_min,
+                'custom_max_us': custom_max,
+                'custom_avg_run_us': avg_custom_time,
             })
     
     return results
@@ -133,8 +158,9 @@ def benchmark_graph_allreduce(
     world_size: int,
     rank: int,
     distributed_init_port: int,
-    test_sizes: List[int],
-    dtypes: List[torch.dtype],
+    phases: List[str],
+    bszs: List[int],
+    seq_lens: int,
     warmup_iters: int = 10,
     benchmark_iters: int = 100,
 ):
@@ -162,10 +188,11 @@ def benchmark_graph_allreduce(
     
     results = []
     
-    for sz in test_sizes:
-        for dtype in dtypes:
-            dtype_name = str(dtype).split('.')[-1]
-            
+    for phase in phases:
+        for bsz in bszs:
+            sz = bsz * HIDDEN_SIZE * seq_lens if phase == 'prefill' else bsz * HIDDEN_SIZE
+            dtype = torch.bfloat16
+
             # Capture graph ONCE outside the benchmark loop
             with graph_capture() as graph_capture_context:
                 inp = torch.randint(1, 16, (sz,), dtype=dtype, device=device)
@@ -188,7 +215,15 @@ def benchmark_graph_allreduce(
                 graph.replay()
                 torch.cuda.synchronize()
                 end = time.perf_counter()
-                graph_times.append((end - start) * 1000)
+                graph_times.append((end - start) * 1000 * 1000)
+            
+            torch.cuda.synchronize()
+            start = time.perf_counter()
+            for _ in range(benchmark_iters):
+                graph.replay()
+            torch.cuda.synchronize()
+            end = time.perf_counter()
+            graph_avg_time = (end - start) * 1000 * 1000 / benchmark_iters  # Convert to us
             
             graph_avg = sum(graph_times) / len(graph_times)
             graph_min = min(graph_times)
@@ -196,65 +231,25 @@ def benchmark_graph_allreduce(
             
             results.append({
                 'rank': rank,
-                'size': sz,
-                'dtype': dtype_name,
+                'phase': phase,
+                'bsz': bsz,
                 'size_bytes': sz * torch.tensor([], dtype=dtype).element_size(),
-                'graph_avg_ms': graph_avg,
-                'graph_min_ms': graph_min,
-                'graph_max_ms': graph_max,
+                'graph_avg_us': graph_avg,
+                'graph_min_us': graph_min,
+                'graph_max_us': graph_max,
+                'graph_avg_run_us': graph_avg_time,
             })
     
     return results
 
 
-def print_results(all_results: List[dict], mode: str = "eager"):
-    """Pretty print benchmark results."""
-    if not all_results:
-        return
-    
-    print(f"\n{'='*100}")
-    print(f"AllReduce Latency Benchmark Results ({mode.upper()} mode)")
-    print(f"{'='*100}")
-    
-    # Group by size and dtype
-    from collections import defaultdict
-    grouped = defaultdict(list)
-    for result in all_results:
-        key = (result['size'], result['dtype'])
-        grouped[key].append(result)
-    
-    if mode == "eager":
-        print(f"{'Size':<12} {'Dtype':<10} {'Size(Bytes)':<15} {'NCCL(ms)':<20} {'Custom(ms)':<20} {'Speedup':<10}")
-        print(f"{'-'*100}")
-        
-        for (size, dtype), results in sorted(grouped.items()):
-            # Average across ranks
-            nccl_avg = sum(r['nccl_avg_ms'] for r in results) / len(results)
-            custom_avg = sum(r['custom_avg_ms'] for r in results) / len(results)
-            speedup = sum(r['speedup'] for r in results) / len(results)
-            size_bytes = results[0]['size_bytes']
-            
-            print(f"{size:<12} {dtype:<10} {size_bytes:<15} {nccl_avg:<20.4f} {custom_avg:<20.4f} {speedup:<10.2f}x")
-    
-    elif mode == "graph":
-        print(f"{'Size':<12} {'Dtype':<10} {'Size(Bytes)':<15} {'Graph Avg(ms)':<20} {'Graph Min(ms)':<20} {'Graph Max(ms)':<20}")
-        print(f"{'-'*100}")
-        
-        for (size, dtype), results in sorted(grouped.items()):
-            graph_avg = sum(r['graph_avg_ms'] for r in results) / len(results)
-            graph_min = min(r['graph_min_ms'] for r in results)
-            graph_max = max(r['graph_max_ms'] for r in results)
-            size_bytes = results[0]['size_bytes']
-            
-            print(f"{size:<12} {dtype:<10} {size_bytes:<15} {graph_avg:<20.4f} {graph_min:<20.4f} {graph_max:<20.4f}")
-
-
-def main():
+def main(mode: str):
     # Configuration
     WORLD_SIZES = [8]
-    TEST_SIZES = [1024 * i for i in [10, 20, 40, 80, 160, 320, 640, 1280, 2560, 5120, 10240]]
-    DTYPES = [torch.bfloat16]
-    WARMUP_ITERS = 10
+    PHASES = ['decode']
+    BSZS = [1, 2, 4, 8, 16, 32]
+    SEQ_LENS = 500
+    WARMUP_ITERS = 100
     BENCHMARK_ITERS = 100
     
     ray.init(log_to_driver=True)
@@ -269,41 +264,44 @@ def main():
         print(f"{'#'*100}")
         
         distributed_init_port = get_open_port()
-        
-        # Eager mode benchmark
-        # print(f"\nRunning eager mode benchmark...")
-        # refs = []
-        # for rank in range(world_size):
-        #     refs.append(
-        #         benchmark_allreduce.remote(
-        #             world_size, rank, distributed_init_port,
-        #             TEST_SIZES, DTYPES, WARMUP_ITERS, BENCHMARK_ITERS
-        #         )
-        #     )
-        # eager_results = []
-        # for result in ray.get(refs):
-        #     eager_results.extend(result)
-        # print_results(eager_results, mode="eager")
-        
-        # Graph mode benchmark
-        # distributed_init_port = get_open_port()
-        print(f"\nRunning graph mode benchmark...")
-        refs = []
-        for rank in range(world_size):
-            refs.append(
-                benchmark_graph_allreduce.remote(
-                    world_size, rank, distributed_init_port,
-                    TEST_SIZES, DTYPES, WARMUP_ITERS, BENCHMARK_ITERS
+        results = []
+        if mode == 'eager':
+            # Eager mode benchmark
+            print(f"\nRunning eager mode benchmark...")
+            refs = []
+            for rank in range(world_size):
+                refs.append(
+                    benchmark_allreduce.remote(
+                        world_size, rank, distributed_init_port,
+                        PHASES, BSZS, SEQ_LENS, WARMUP_ITERS, BENCHMARK_ITERS
+                    )
                 )
-            )
-        graph_results = []
-        for result in ray.get(refs):
-            graph_results.extend(result)
-        print_results(graph_results, mode="graph")
-    
+            for result in ray.get(refs):
+                results.extend(result)
+        
+        if  mode == 'graph':
+            # Graph mode benchmark
+            print(f"\nRunning graph mode benchmark...")
+            refs = []
+            for rank in range(world_size):
+                refs.append(
+                    benchmark_graph_allreduce.remote(
+                        world_size, rank, distributed_init_port,
+                        PHASES, BSZS, SEQ_LENS, WARMUP_ITERS, BENCHMARK_ITERS
+                    )
+                )
+            
+            for result in ray.get(refs):
+                results.extend(result)
+            
+        df = pd.DataFrame(results)
+        print(df.to_string(index=False))
     ray.shutdown()
     print("\nBenchmark completed!")
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="AllReduce Benchmarking with SGLang DeepDive LTP")
+    parser.add_argument('--mode', type=str, choices=['eager', 'graph'], default='eager', help='Benchmark mode to run')
+    args = parser.parse_args()
+    main(args.mode)
