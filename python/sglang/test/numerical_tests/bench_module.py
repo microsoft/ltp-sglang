@@ -42,6 +42,8 @@ class BenchConfig:
         repeat_count=1,
     ):
         """Initialize the test configuration."""
+        if isinstance(module_config, dict):
+            module_config = PretrainedConfig.from_dict(module_config)
         self.module_config = module_config
         self.real_weight_prefix = real_weight_prefix
         self.log_dir = log_dir
