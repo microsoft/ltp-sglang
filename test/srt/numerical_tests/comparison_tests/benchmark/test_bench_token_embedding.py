@@ -21,6 +21,8 @@ weight_prefixes = [
     "random1",
     "random2",
 ]
+if not CHECKPOINT_PATH:
+    weight_prefixes = [item for item in weight_prefixes if "random" in item]
 
 
 class TestBenchTokenEmbedding(BenchModule):

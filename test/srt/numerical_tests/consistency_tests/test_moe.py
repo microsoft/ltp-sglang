@@ -33,6 +33,8 @@ weight_prefixes = [
     "random2",
     "random3",
 ]
+if not CHECKPOINT_PATH:
+    weight_prefixes = [item for item in weight_prefixes if "random" in item]
 
 
 class TestMoE(TestModule):
