@@ -15,8 +15,8 @@ LOG_DIR=${2:-"benchmark"}
 mkdir -p "$LOG_DIR"
 
 # Set environment variables for the test
-export CHECKPOINT_PATH="$REAL_WEIGHTS_PATH"
-export LOG_DIR="$LOG_DIR"
+export TEST_CHECKPOINT_DIR="$REAL_WEIGHTS_PATH"
+export TEST_OUTPUT_DIR="$LOG_DIR"
 
 # Run the benchmark generation test
 script_dir=$(dirname "$0")

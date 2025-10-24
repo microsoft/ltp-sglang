@@ -19,6 +19,8 @@ from sglang.test.numerical_tests.utils.load_data import (
 from sglang.test.numerical_tests.utils.module_config import MODULE_CONFIGS
 
 weight_prefixes = ["", "random0", "random1", "random2", "random3"]
+if not CHECKPOINT_PATH:
+    weight_prefixes = [item for item in weight_prefixes if "random" in item]
 
 
 class TestLogits(TestModule):
