@@ -14,7 +14,7 @@ from sglang.test.numerical_tests.utils.load_data import (
 from sglang.test.numerical_tests.utils.module_config import MODULE_CONFIGS
 
 # Define the configurations for the Token Embedding tests
-weight_prefixs = [
+weight_prefixes = [
     "model.embed_tokens",
     "random0",
     "random1",
@@ -30,7 +30,7 @@ class TestTokenEmbedding(TestModule):
     """
 
     @pytest.mark.parametrize("embedding_config", MODULE_CONFIGS)
-    @pytest.mark.parametrize("weight_prefix", weight_prefixs)
+    @pytest.mark.parametrize("weight_prefix", weight_prefixes)
     @pytest.mark.parametrize("dtype", TEST_DTYPES)
     def test_sglang_embedding(
         self, embedding_config: dict, weight_prefix: str, dtype: torch.dtype
