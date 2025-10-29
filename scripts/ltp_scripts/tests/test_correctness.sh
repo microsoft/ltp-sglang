@@ -3,6 +3,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
+set -euo pipefail
 
 export TEST_OUTPUT_DIR="${TEST_OUTPUT_DIR:-/mnt/output}"
 
