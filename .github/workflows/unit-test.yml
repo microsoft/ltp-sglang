@@ -13,7 +13,7 @@ on:
 
 jobs:
   unit-test-correctness:
-    runs-on: [self-hosted, linux/amd64]
+    runs-on: [self-hosted, gpu]
     timeout-minutes: 120
     permissions:
       contents: read
@@ -30,15 +30,16 @@ jobs:
           password: ${{ secrets.DOCKER_LOGIN_PASSWORD }}
       - name: Prepare Docker image
         run: |
-          sudo docker pull ${{ secrets.AZURE_CR_URI }}/sglang/main:cuda
+          sudo docker buildx build -t sglang/main:cuda -f scripts/ltp_scripts/dev.cuda.dockerfile .
       - name: Test correctness
         env:
           TEST_OUTPUT_DIR: /mnt/output
           TEST_BATCH_SIZES: "16"
           TEST_SEQ_LENS: "4096"
-          TEST_RANDOM_INPUT_COUNT: "1"
-          TEST_REPEAT_COUNT: "1"
+          TEST_RANDOM_INPUT_COUNT: "3"
+          TEST_REPEAT_COUNT: "2"
         run: |
-          sudo docker run --privileged --net=host --gpus=all -v /mnt:/mnt --entrypoint /bin/bash \
-            ${{ secrets.AZURE_CR_URI }}/sglang/main:cuda \
+          env | grep ^TEST_ | tee /tmp/env
+          sudo docker run --privileged --net=host --gpus=all -v /mnt:/mnt \
+            --env-file /tmp/env --entrypoint /bin/bash sglang/main:cuda \
             /sgl-workspace/sglang/scripts/ltp_scripts/tests/test_correctness.sh
