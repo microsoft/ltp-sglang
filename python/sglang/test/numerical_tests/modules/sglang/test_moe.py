@@ -13,8 +13,9 @@ from sglang.srt.distributed import (
     tensor_model_parallel_all_reduce,
 )
 from sglang.srt.layers.linear import ReplicatedLinear
-from sglang.srt.layers.moe.ep_moe.layer import EPMoE
+from sglang.srt.layers.moe.ep_moe.layer import EPMoE, get_moe_impl_class
 from sglang.srt.layers.moe.fused_moe_triton import FusedMoE
+from sglang.srt.layers.moe.topk import TopK
 from sglang.srt.model_loader.weight_utils import default_weight_loader
 from sglang.srt.utils import add_prefix
 
@@ -63,22 +64,29 @@ class MoE(nn.Module):
                 f"the number of experts {config.n_routed_experts}."
             )
 
+        scoring_func = getattr(config, "scoring_func", "softmax")
         routing_func = None
         # The default routing function is softmax, but we can also use sigmoid, which is the setting of the sigma v2 full model.
-        if getattr(config, "scoring_func", "softmax") == "sigmoid":
+        if scoring_func == "sigmoid":
             routing_func = fused_topk_sigmoid
+
+        self.topk = TopK(
+            top_k=config.num_experts_per_tok,
+            renormalize=config.norm_topk_prob,
+            use_grouped_topk=False,
+            # Use sigmoid scoring function, `scoring_func` parameter is not used now, will be supported by sglang in the future
+            scoring_func="sigmoid",
+            custom_routing_function=routing_func,
+        )
 
         self.experts = MoEImpl(
             num_experts=config.n_routed_experts,
             top_k=config.num_experts_per_tok,
+            layer_id=1,
             hidden_size=config.hidden_size,
             intermediate_size=config.moe_intermediate_size,
-            renormalize=config.norm_topk_prob,
-            custom_routing_function=routing_func,
             prefix=add_prefix("experts", prefix),
-            tp_size=self.tp_size,
         )
-        self.MoEImpl = MoEImpl
 
         self.gate = ReplicatedLinear(
             config.hidden_size,
@@ -94,9 +102,8 @@ class MoE(nn.Module):
 
         # router_logits: (num_tokens, n_experts)
         router_logits, _ = self.gate(hidden_states)
-        final_hidden_states = self.experts(
-            hidden_states=hidden_states, router_logits=router_logits
-        )
+        topk_output = self.topk(hidden_states, router_logits)
+        final_hidden_states = self.experts(hidden_states, topk_output)
         if self.tp_size > 1:
             final_hidden_states = tensor_model_parallel_all_reduce(final_hidden_states)
 
@@ -109,7 +116,7 @@ class MoE(nn.Module):
             ("gate_up_proj", "up_proj", 1),
         ]
 
-        expert_params_mapping = self.MoEImpl.make_expert_params_mapping(
+        expert_params_mapping = self.experts.make_expert_params_mapping(
             ckpt_gate_proj_name="gate_proj",
             ckpt_down_proj_name="down_proj",
             ckpt_up_proj_name="up_proj",
