@@ -14,7 +14,7 @@ for module in "${modules[@]}"; do
     TEST_BENCHMARK_DIR="$TEST_OUTPUT_DIR/bench/$module" pytest -s "$(dirname $0)/../../../test/srt/numerical_tests/comparison_tests/test_${module}_comparison.py"
 done
 
-for f in /mnt/output/*-compare/*/*.json; do
+for f in $TEST_OUTPUT_DIR/*-compare/*/*.json; do
     printf '\n*** %s ***\n' "$f"
     jq . "$f"
 done
