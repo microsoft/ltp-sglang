@@ -3,7 +3,7 @@ ARG BASE_IMAGE=lmsysorg/sglang:v0.4.10.post2-rocm630-mi30x
 FROM ${BASE_IMAGE}
 
 RUN apt-get update -y && \
-    apt-get install -y git-lfs
+    apt-get install -y git-lfs jq
 
 # Set the working directory
 WORKDIR /sgl-workspace/sglang
