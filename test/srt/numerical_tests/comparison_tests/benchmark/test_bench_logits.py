@@ -19,6 +19,8 @@ weight_prefixes = [
     "random0",
     "random1",
 ]
+if not CHECKPOINT_PATH:
+    weight_prefixes = [item for item in weight_prefixes if "random" in item]
 
 
 class TestBenchLogits(BenchModule):
