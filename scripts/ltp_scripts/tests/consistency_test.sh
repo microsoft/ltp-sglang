@@ -17,6 +17,8 @@ mkdir -p "$LOG_DIR"
 # Set environment variables for the test
 export CHECKPOINT_PATH="$REAL_WEIGHTS_PATH"
 export LOG_DIR="$LOG_DIR"
+# Disable AITER for consistency tests due to aiter did not support current moe module
+export SGLANG_USE_AITER=false
 
 # Run the consistency test
 script_dir=$(dirname "$0")
