@@ -1,0 +1,44 @@
+name: Unit Test
+
+on:
+  push:
+    branches:
+    - main
+    - release/*
+  pull_request:
+    branches:
+    - main
+    - release/*
+  workflow_dispatch:
+
+jobs:
+  unit-test-correctness:
+    runs-on: [self-hosted, gpu]
+    timeout-minutes: 120
+    permissions:
+      contents: read
+    env:
+      TEST_OUTPUT_DIR: /mnt/output
+      TEST_BATCH_SIZES: "16"
+      TEST_SEQ_LENS: "4096"
+      TEST_RANDOM_INPUT_COUNT: "3"
+      TEST_REPEAT_COUNT: "2"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Cleanup
+        run: |
+          sudo docker container prune
+          sudo docker image prune
+          sudo rm -rf $TEST_OUTPUT_DIR
+      - name: Prepare Docker image
+        run: |
+          sudo docker buildx build -t sglang/main:cuda -f scripts/ltp_scripts/dev.cuda.dockerfile .
+      - name: Test correctness
+        run: |
+          env | grep ^TEST_ | tee /tmp/env
+          sudo docker run --rm --privileged --net=host --gpus=all -v /mnt:/mnt \
+            --env-file /tmp/env --entrypoint /bin/bash sglang/main:cuda \
+            /sgl-workspace/sglang/scripts/ltp_scripts/tests/test_correctness.sh

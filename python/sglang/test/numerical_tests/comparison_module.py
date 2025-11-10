@@ -111,9 +111,9 @@ class CompareModule:
                         bench_output_tensors, sglang_output_tensors
                     )
 
-                    all_similarities.append(simi)
-                    all_max_mean_diffs.append(max_mean_diff)
-                    all_max_std_diffs.append(max_std_diff)
+                    all_similarities.append(round(simi, 4))
+                    all_max_mean_diffs.append(round(max_mean_diff, 4))
+                    all_max_std_diffs.append(round(max_std_diff, 4))
 
                 # Store the comparison results for this tensor folder
                 # which contains multiple trace groups with the same shape

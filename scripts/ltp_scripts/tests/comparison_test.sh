@@ -28,7 +28,7 @@ run_comparison_test() {
     local module_name=$1
 
     echo "Running comparison test for $module_name..."
-    BENCHMARK_FOLDER="$dataset_path/$module_name" pytest -s "$test_path/test_${module_name}_comparison.py"
+    TEST_BENCHMARK_DIR="$dataset_path/$module_name" TEST_OUTPUT_DIR=$output_path pytest -s "$test_path/test_${module_name}_comparison.py"
 }
 
 run_comparison_test "attention"
