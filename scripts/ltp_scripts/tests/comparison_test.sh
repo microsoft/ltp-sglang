@@ -16,7 +16,7 @@ output_path=${2:-"./comparison_results"}
 mkdir -p "$output_path"
 
 # Set environment variables for the test
-export LOG_DIR="$output_path"
+export TEST_OUTPUT_DIR="$output_path"
 # Disable AITER for consistency tests due to aiter did not support current moe module
 export SGLANG_USE_AITER=false
 
@@ -28,7 +28,7 @@ run_comparison_test() {
     local module_name=$1
 
     echo "Running comparison test for $module_name..."
-    TEST_BENCHMARK_DIR="$dataset_path/$module_name" TEST_OUTPUT_DIR=$output_path pytest -s "$test_path/test_${module_name}_comparison.py"
+    TEST_BENCHMARK_DIR="$dataset_path/$module_name" pytest -s "$test_path/test_${module_name}_comparison.py"
 }
 
 run_comparison_test "attention"
