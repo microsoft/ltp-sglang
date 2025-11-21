@@ -18,7 +18,7 @@ jobs:
     permissions:
       contents: read
     env:
-      TEST_OUTPUT_DIR: /mnt/output
+      TEST_OUTPUT_DIR: /mnt/nvme/output
       TEST_BATCH_SIZES: "16"
       TEST_SEQ_LENS: "4096"
       TEST_RANDOM_INPUT_COUNT: "3"
