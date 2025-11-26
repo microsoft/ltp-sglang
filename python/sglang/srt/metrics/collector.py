@@ -495,6 +495,12 @@ class TokenizerMetricsCollector:
             labelnames=labels.keys(),
             buckets=bucket_time_to_first_token,
         )
+        self.time_to_first_token_list = []
+        self.inter_token_latency_seconds_list = []
+        self.tpot_list = []  # Time Per Output Token
+        self.prefill_latency_list = []  # Prefill latency in ms
+        self.decode_latency_list = []  # Decode latency (from first token to end) in ms
+        self.e2e_request_latency_list = []
 
         self.histogram_inter_token_latency_seconds = Histogram(
             name="sglang:inter_token_latency_seconds",
@@ -510,6 +516,20 @@ class TokenizerMetricsCollector:
             buckets=bucket_e2e_request_latency,
         )
 
+        self.histogram_prefill_latency = Histogram(
+            name="sglang:prefill_latency_milliseconds",
+            documentation="Histogram of prefill latency in milliseconds",
+            labelnames=labels.keys(),
+            buckets=bucket_e2e_request_latency,
+        )
+
+        self.histogram_decode_latency = Histogram(
+            name="sglang:decode_latency_seconds",
+            documentation="Histogram of decode latency in seconds (from first token to completion)",
+            labelnames=labels.keys(),
+            buckets=bucket_e2e_request_latency,
+        )
+
     def _log_histogram(self, histogram, data: Union[int, float]) -> None:
         histogram.labels(**self.labels).observe(data)
 
@@ -520,6 +540,7 @@ class TokenizerMetricsCollector:
         cached_tokens: int,
         e2e_latency: float,
         has_grammar: bool,
+        ttft: float = 0.0,
     ):
         self.prompt_tokens_total.labels(**self.labels).inc(prompt_tokens)
         self.generation_tokens_total.labels(**self.labels).inc(generation_tokens)
@@ -529,12 +550,19 @@ class TokenizerMetricsCollector:
         if has_grammar:
             self.num_so_requests_total.labels(**self.labels).inc(1)
         self._log_histogram(self.histogram_e2e_request_latency, e2e_latency)
+        self.e2e_request_latency_list.append(e2e_latency)
         if self.collect_tokens_histogram:
             self._log_histogram(self.prompt_tokens_histogram, prompt_tokens)
             self._log_histogram(self.generation_tokens_histogram, generation_tokens)
 
+        # Calculate and observe TPOT if we have ttft and enough tokens
+        if ttft > 0.0 and generation_tokens > 1:
+            tpot = (e2e_latency - ttft) / (generation_tokens - 1)
+            self.observe_tpot(tpot)
+
     def observe_time_to_first_token(self, value: float):
         self.histogram_time_to_first_token.labels(**self.labels).observe(value)
+        self.time_to_first_token_list.append(value)
 
     def observe_inter_token_latency(self, internval: float, num_new_tokens: int):
         adjusted_interval = internval / num_new_tokens
@@ -549,5 +577,32 @@ class TokenizerMetricsCollector:
                 his._buckets[i].inc(num_new_tokens)
                 break
 
+        for i in range(num_new_tokens):
+            self.inter_token_latency_seconds_list.append(adjusted_interval)
+
+    def observe_tpot(self, value: float):
+        """Observe Time Per Output Token (TPOT).
+        TPOT = (e2e_latency - ttft) / (generation_tokens - 1)
+        """
+        self.tpot_list.append(value)
+
+    def observe_prefill_latency(self, value: float):
+        """Observe prefill latency."""
+        self.histogram_prefill_latency.labels(**self.labels).observe(value)
+        self.prefill_latency_list.append(value)
+
+    def observe_decode_latency(self, value: float):
+        """Observe decode latency (from first token to completion)."""
+        self.histogram_decode_latency.labels(**self.labels).observe(value)
+        self.decode_latency_list.append(value)
+
     def observe_one_aborted_request(self):
         self.num_aborted_requests_total.labels(**self.labels).inc(1)
+
+    def clear(self):
+        self.time_to_first_token_list = []
+        self.inter_token_latency_seconds_list = []
+        self.tpot_list = []
+        self.prefill_latency_list = []
+        self.decode_latency_list = []
+        self.e2e_request_latency_list = []

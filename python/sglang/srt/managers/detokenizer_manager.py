@@ -234,6 +234,10 @@ class DetokenizerManager:
             output_token_ids_logprobs_val=recv_obj.output_token_ids_logprobs_val,
             output_token_ids_logprobs_idx=recv_obj.output_token_ids_logprobs_idx,
             output_hidden_states=recv_obj.output_hidden_states,
+            prefill_latencies=recv_obj.prefill_latencies if hasattr(recv_obj, 'prefill_latencies') else None,
+            decode_latencies=recv_obj.decode_latencies if hasattr(recv_obj, 'decode_latencies') else None,
+            first_token_times=recv_obj.first_token_times if hasattr(recv_obj, 'first_token_times') else None,
+            decode_timestamps=recv_obj.decode_timestamps if hasattr(recv_obj, 'decode_timestamps') else None,
         )
 
     def handle_multimodal_decode_req(self, recv_obj: BatchMultimodalDecodeReq):

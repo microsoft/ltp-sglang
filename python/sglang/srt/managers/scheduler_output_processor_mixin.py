@@ -83,6 +83,11 @@ class SchedulerOutputProcessorMixin:
 
                 if req.is_chunked <= 0:
                     # req output_ids are set here
+                    # Track first token time for TTFT measurement
+                    if len(req.output_ids) == 0 and req.first_token_time == 0.0 and self.enable_metrics:
+                        req.first_token_time = time.time()
+                        # Also track the timestamp for ITL calculation (first token from prefill)
+                        req.decode_timestamps.append(req.first_token_time)
                     req.output_ids.append(next_token_id)
                     req.check_finished()
 
@@ -241,6 +246,9 @@ class SchedulerOutputProcessorMixin:
             if batch.spec_algorithm.is_none():
                 # speculative worker will solve the output_ids in speculative decoding
                 req.output_ids.append(next_token_id)
+                # Track decode timestamp for accurate ITL calculation
+                if self.enable_metrics:
+                    req.decode_timestamps.append(time.time())
 
             req.check_finished()
             if req.finished():
@@ -495,6 +503,9 @@ class SchedulerOutputProcessorMixin:
         spec_verify_ct = []
         output_hidden_states = None
 
+        # Track send_token_offset for each rid for metrics collection
+        rid_to_send_offset = {}
+
         if return_logprob:
             input_token_logprobs_val = []
             input_token_logprobs_idx = []
@@ -558,6 +569,8 @@ class SchedulerOutputProcessorMixin:
                     req.send_output_token_logprobs_offset
                 )
                 rids.append(req.rid)
+                # Store the offset before updating for metrics collection
+                rid_to_send_offset[req.rid] = send_token_offset
                 finished_reasons.append(
                     req.finished_reason.to_json() if req.finished_reason else None
                 )
@@ -666,6 +679,61 @@ class SchedulerOutputProcessorMixin:
             ):
                 req.log_time_stats()
 
+        # Compute GPU timing latencies for metrics (synchronize events and convert to float)
+        prefill_latencies = []
+        decode_latencies = []
+        first_token_times = []
+        decode_timestamps_list = []
+        if self.enable_metrics and rids:
+            # Build a map from rid to req for efficient lookup
+            rid_to_req = {req.rid: req for req in reqs}
+
+            for rid in rids:
+                req = rid_to_req.get(rid)
+                if req is None:
+                    # This should never happen - defensive check
+                    decode_timestamps_list.append(None)
+                    logger.warning(f"Request {rid} not found in reqs but is in rids")
+                    continue
+
+                # Compute prefill latency from GPU events
+                prefill_latency = None
+                if hasattr(req, 'prefill_start_event') and hasattr(req, 'prefill_end_event'):
+                    if req.prefill_start_event is not None and req.prefill_end_event is not None:
+                        try:
+                            req.prefill_end_event.synchronize()
+                            prefill_latency = req.prefill_start_event.elapsed_time(req.prefill_end_event)  # Keep in ms
+                        except Exception as e:
+                            logger.warning(f"[DEBUG] Req {rid}: Failed to compute prefill latency: {e}")
+                            prefill_latency = None
+                prefill_latencies.append(prefill_latency)
+
+                # Compute decode latency from GPU events (from first decode to last decode)
+                decode_latency = None
+                if hasattr(req, 'decode_start_event') and hasattr(req, 'decode_end_event'):
+                    if req.decode_start_event is not None and req.decode_end_event is not None:
+                        try:
+                            req.decode_end_event.synchronize()
+                            decode_latency = req.decode_start_event.elapsed_time(req.decode_end_event)  # Keep in ms
+                        except Exception as e:
+                            logger.warning(f"[DEBUG] Req {rid}: Failed to compute decode latency: {e}")
+                            decode_latency = None
+                decode_latencies.append(decode_latency)
+
+                if hasattr(req, 'first_token_time'):
+                # Get first token generation time for accurate TTFT
+                    first_token_time = req.first_token_time if req.first_token_time > 0.0 else None
+                    first_token_times.append(first_token_time)
+
+                # Get decode timestamps for tokens being sent in this batch
+                # Use the send_offset we stored when building the rids list
+                send_offset = rid_to_send_offset.get(rid, 0)
+                if hasattr(req, 'decode_timestamps') and len(req.decode_timestamps) > send_offset:
+                    # Send timestamps for the tokens being output in this batch
+                    batch_timestamps = req.decode_timestamps[send_offset:]
+                    decode_timestamps_list.append(batch_timestamps if batch_timestamps else None)
+                else:
+                    decode_timestamps_list.append(None)
         # Send to detokenizer
         if rids:
             if self.model_config.is_multimodal_gen:
@@ -699,6 +767,10 @@ class SchedulerOutputProcessorMixin:
                     output_token_ids_logprobs_val,
                     output_token_ids_logprobs_idx,
                     output_hidden_states,
+                    prefill_latencies if self.enable_metrics else None,
+                    decode_latencies if self.enable_metrics else None,
+                    first_token_times if self.enable_metrics else None,
+                    decode_timestamps_list if self.enable_metrics else None,
                 )
             )
 

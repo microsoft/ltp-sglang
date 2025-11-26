@@ -824,7 +824,7 @@ class TokenizerManager:
         generators = []
         rids = []
         if getattr(obj, "parallel_sample_num", 1) == 1:
-            if self.server_args.enforce_batching: 
+            if self.server_args.enforce_batching:
                 objs = [obj[i] for i in range(batch_size)]
                 tokenized_objs = await asyncio.gather(
                     *(self._tokenize_one_request(obj) for obj in objs)
@@ -1739,25 +1739,73 @@ class TokenizerManager:
             else 0
         )
 
+        # Use accurate first token time from scheduler if available
+        first_token_in_this_batch = False
         if (
             state.first_token_time == 0.0
             and self.disaggregation_mode != DisaggregationMode.PREFILL
         ):
-            state.first_token_time = state.last_time = time.time()
-            state.last_completion_tokens = completion_tokens
-            self.metrics_collector.observe_time_to_first_token(
-                state.first_token_time - state.created_time
-            )
-        else:
-            num_new_tokens = completion_tokens - state.last_completion_tokens
-            if num_new_tokens:
-                new_time = time.time()
-                interval = new_time - state.last_time
-                self.metrics_collector.observe_inter_token_latency(
-                    interval,
-                    num_new_tokens,
+            first_token_in_this_batch = True
+            # Check if we have first_token_time from the batch (set when first token was generated in scheduler)
+            if hasattr(recv_obj, 'first_token_times') and recv_obj.first_token_times is not None:
+                batch_first_token_time = recv_obj.first_token_times[i]
+                if batch_first_token_time is not None and batch_first_token_time > 0.0:
+                    # Use the accurate first token time from when it was generated
+                    state.first_token_time = batch_first_token_time
+                    self.metrics_collector.observe_time_to_first_token(
+                        state.first_token_time - state.created_time
+                    )
+                    # Don't set last_time or last_completion_tokens yet - will be set after ITL calculation
+                else:
+                    # Fallback: use current time if first_token_time not available from batch
+                    state.first_token_time = state.last_time = time.time()
+                    state.last_completion_tokens = completion_tokens
+                    self.metrics_collector.observe_time_to_first_token(
+                        state.first_token_time - state.created_time
+                    )
+            else:
+                # Fallback: use current time if first_token_time not available from batch
+                state.first_token_time = state.last_time = time.time()
+                state.last_completion_tokens = completion_tokens
+                self.metrics_collector.observe_time_to_first_token(
+                    state.first_token_time - state.created_time
                 )
-                state.last_time = new_time
+
+        # Calculate accurate ITL using decode_timestamps from scheduler
+        if state.first_token_time > 0.0:
+            # Calculate accurate ITL using decode_timestamps from scheduler
+            # For the first batch with accurate timing, calculate ITL for all tokens
+            num_new_tokens = completion_tokens - state.last_completion_tokens
+            if num_new_tokens > 0 or (first_token_in_this_batch and completion_tokens > 0):
+                # Try to use accurate decode timestamps from scheduler
+                batch_timestamps = None
+                if hasattr(recv_obj, 'decode_timestamps') and recv_obj.decode_timestamps is not None:
+                    batch_timestamps = recv_obj.decode_timestamps[i]
+
+                if batch_timestamps and len(batch_timestamps) > 0:
+                    # We have accurate timestamps for each token in this batch
+                    # Calculate ITL for each token and report them individually
+                    prev_time = state.last_time if state.last_time > 0.0 else state.first_token_time
+
+                    for timestamp in batch_timestamps:
+                        if timestamp > prev_time:
+                            itl = timestamp - prev_time
+                            # Report ITL for this single token
+                            self.metrics_collector.observe_inter_token_latency(itl, 1)
+                            prev_time = timestamp
+
+                    # Update state to the last timestamp in this batch
+                    state.last_time = batch_timestamps[-1]
+                else:
+                    # Fallback: use current receive time (less accurate due to streaming intervals)
+                    new_time = time.time()
+                    interval = new_time - state.last_time
+                    self.metrics_collector.observe_inter_token_latency(
+                        interval,
+                        num_new_tokens,
+                    )
+                    state.last_time = new_time
+
                 state.last_completion_tokens = completion_tokens
 
         if state.finished:
@@ -1767,13 +1815,28 @@ class TokenizerManager:
                 or state.obj.sampling_params.get("ebnf", None)
                 or state.obj.sampling_params.get("structural_tag", None)
             )
+            # Calculate TTFT for metrics
+            ttft = state.first_token_time - state.created_time if state.first_token_time > 0.0 else 0.0
             self.metrics_collector.observe_one_finished_request(
                 recv_obj.prompt_tokens[i],
                 completion_tokens,
                 recv_obj.cached_tokens[i],
                 state.finished_time - state.created_time,
                 has_grammar,
+                ttft,
             )
+
+            # Observe prefill latency - already computed in scheduler
+            if hasattr(recv_obj, 'prefill_latencies') and recv_obj.prefill_latencies is not None:
+                prefill_latency = recv_obj.prefill_latencies[i]
+                if prefill_latency is not None and prefill_latency > 0:
+                    self.metrics_collector.observe_prefill_latency(prefill_latency)
+
+            # Observe decode latency from GPU events (already in ms)
+            if hasattr(recv_obj, 'decode_latencies') and recv_obj.decode_latencies:
+                decode_latency = recv_obj.decode_latencies[i]
+                if decode_latency and decode_latency > 0:
+                    self.metrics_collector.observe_decode_latency(decode_latency)
 
     def dump_requests(self, state: ReqState, out_dict: dict):
         self.dump_request_list.append(
