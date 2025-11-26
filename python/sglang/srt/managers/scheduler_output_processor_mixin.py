@@ -666,6 +666,35 @@ class SchedulerOutputProcessorMixin:
             ):
                 req.log_time_stats()
 
+        # Compute GPU timing latencies for metrics (synchronize events and convert to float)
+        prefill_latencies = []
+        decode_latencies = []
+        if self.enable_metrics and rids:
+            for idx, req in enumerate(reqs):
+                # Compute prefill latency from GPU events
+                prefill_latency = None
+                if hasattr(req, 'prefill_start_event') and hasattr(req, 'prefill_end_event'):
+                    if req.prefill_start_event is not None and req.prefill_end_event is not None:
+                        try:
+                            req.prefill_end_event.synchronize()
+                            prefill_latency = req.prefill_start_event.elapsed_time(req.prefill_end_event)  # Keep in ms
+                        except Exception as e:
+                            logger.warning(f"[DEBUG] Req {idx}: Failed to compute prefill latency: {e}")
+                            prefill_latency = None
+                prefill_latencies.append(prefill_latency)
+
+                # Compute decode latency from GPU events (from first decode to last decode)
+                decode_latency = None
+                if hasattr(req, 'decode_start_event') and hasattr(req, 'decode_end_event'):
+                    if req.decode_start_event is not None and req.decode_end_event is not None:
+                        try:
+                            req.decode_end_event.synchronize()
+                            decode_latency = req.decode_start_event.elapsed_time(req.decode_end_event)  # Keep in ms
+                        except Exception as e:
+                            logger.warning(f"[DEBUG] Req {idx}: Failed to compute decode latency: {e}")
+                            decode_latency = None
+                decode_latencies.append(decode_latency)
+
         # Send to detokenizer
         if rids:
             if self.model_config.is_multimodal_gen:
@@ -699,6 +728,8 @@ class SchedulerOutputProcessorMixin:
                     output_token_ids_logprobs_val,
                     output_token_ids_logprobs_idx,
                     output_hidden_states,
+                    prefill_latencies if self.enable_metrics else None,
+                    decode_latencies if self.enable_metrics else None,
                 )
             )
 

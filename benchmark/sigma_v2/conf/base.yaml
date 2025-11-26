@@ -17,8 +17,6 @@ max_running_requests: 16384
 max_prefill_tokens: 1048576
 chunked_prefill_size: -1
 
-max_tokens_generated: 2
-
-enable_benchmark: true
-enforce_batching: false
+enable_benchmark: false
+enforce_batching: true
 profile_phase: null

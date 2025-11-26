@@ -695,6 +695,10 @@ class BatchTokenIDOut:
     # Hidden states
     output_hidden_states: List[List[float]]
 
+    # GPU timing latencies (in milliseconds) for metrics - computed from events before sending
+    prefill_latencies: Optional[List[Optional[float]]] = None
+    decode_latencies: Optional[List[Optional[float]]] = None
+
 
 @dataclass
 class BatchMultimodalDecodeReq:
@@ -741,6 +745,10 @@ class BatchStrOut:
 
     # Hidden states
     output_hidden_states: List[List[float]]
+
+    # GPU timing latencies (in milliseconds) for metrics
+    prefill_latencies: Optional[List[Optional[float]]] = None
+    decode_latencies: Optional[List[Optional[float]]] = None
 
 
 @dataclass

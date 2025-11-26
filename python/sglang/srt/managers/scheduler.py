@@ -1220,7 +1220,7 @@ class Scheduler(
             self.grammar_queue.append(req)
         else:
             self._add_request_to_queue(req)
-    
+
     def batch_handle_generate_request(
         self,
         recv_reqs: List[TokenizedGenerateReqInput],
@@ -1703,6 +1703,19 @@ class Scheduler(
             logger.info(f"Scheduler.run_batch sleep {self.forward_sleep_time}s")
             time.sleep(self.forward_sleep_time)
 
+        # Record timing for prefill and decode phases using GPU events
+        if self.enable_metrics and self.device != "cpu":
+            # Mark prefill start event for all requests in this batch
+            for req in batch.reqs:
+                if batch.forward_mode.is_prefill():
+                    if req.prefill_start_event is None:
+                        req.prefill_start_event = torch.cuda.Event(enable_timing=True)
+                        req.prefill_start_event.record()
+                elif batch.forward_mode.is_decode():
+                    if req.decode_start_event is None:
+                        req.decode_start_event = torch.cuda.Event(enable_timing=True)
+                        req.decode_start_event.record()
+
         # Run forward
         if self.is_generation:
             if self.spec_algorithm.is_none():
@@ -1770,6 +1783,21 @@ class Scheduler(
             ret = EmbeddingBatchResult(
                 embeddings=embeddings, bid=model_worker_batch.bid
             )
+
+        # Record timing for prefill end and decode start using GPU events
+        if self.enable_metrics and self.device != "cpu":
+            if batch.forward_mode.is_prefill():
+                # Mark prefill end event
+                for req in batch.reqs:
+                    req.prefill_end_event = torch.cuda.Event(enable_timing=True)
+                    req.prefill_end_event.record()
+            elif batch.forward_mode.is_decode():
+                # Mark decode start event (only once per request)
+                for req in batch.reqs:
+                    # Update decode end event on every decode step
+                    req.decode_end_event = torch.cuda.Event(enable_timing=True)
+                    req.decode_end_event.record()
+
         return ret
 
     def process_batch_result(

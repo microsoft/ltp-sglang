@@ -824,7 +824,7 @@ class TokenizerManager:
         generators = []
         rids = []
         if getattr(obj, "parallel_sample_num", 1) == 1:
-            if self.server_args.enforce_batching: 
+            if self.server_args.enforce_batching:
                 objs = [obj[i] for i in range(batch_size)]
                 tokenized_objs = await asyncio.gather(
                     *(self._tokenize_one_request(obj) for obj in objs)
@@ -1767,13 +1767,28 @@ class TokenizerManager:
                 or state.obj.sampling_params.get("ebnf", None)
                 or state.obj.sampling_params.get("structural_tag", None)
             )
+            # Calculate TTFT for metrics
+            ttft = state.first_token_time - state.created_time if state.first_token_time > 0.0 else 0.0
             self.metrics_collector.observe_one_finished_request(
                 recv_obj.prompt_tokens[i],
                 completion_tokens,
                 recv_obj.cached_tokens[i],
                 state.finished_time - state.created_time,
                 has_grammar,
+                ttft,
             )
+
+            # Observe prefill latency - already computed in scheduler
+            if hasattr(recv_obj, 'prefill_latencies') and recv_obj.prefill_latencies is not None:
+                prefill_latency = recv_obj.prefill_latencies[i]
+                if prefill_latency is not None and prefill_latency > 0:
+                    self.metrics_collector.observe_prefill_latency(prefill_latency)
+
+            # Observe decode latency from GPU events (already in ms)
+            if hasattr(recv_obj, 'decode_latencies') and recv_obj.decode_latencies:
+                decode_latency = recv_obj.decode_latencies[i]
+                if decode_latency and decode_latency > 0:
+                    self.metrics_collector.observe_decode_latency(decode_latency)
 
     def dump_requests(self, state: ReqState, out_dict: dict):
         self.dump_request_list.append(

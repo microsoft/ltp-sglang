@@ -255,7 +255,8 @@ class TpModelWorker:
                 f"Latency Benchmark Device {torch.cuda.current_device()} "
                 f"Phase: {phase}, Batch Size: {forward_batch.batch_size}, "
                 f"Sequence Length: {forward_batch.seq_lens[0]}, "
-                f"Average Latency: {avg_latency:.4f} ms"
+                f"Average Latency: {avg_latency:.4f} ms, "
+                f"Throughput: {forward_batch.batch_size * forward_batch.seq_lens[0] / (avg_latency / 1000):.2f} tokens/s"
             )
 
         return logits_output, can_run_cuda_graph
