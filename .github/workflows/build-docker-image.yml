@@ -34,7 +34,7 @@ jobs:
         - name: rocm
           base-image: lmsysorg/sglang:v0.4.10.post2-rocm630-mi30x
           platforms: linux/amd64
-          runner: self-hosted
+          runner: [self-hosted, build-image]
     steps:
       - name: Checkout target branch
         uses: actions/checkout@v4
