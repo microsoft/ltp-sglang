@@ -7,7 +7,7 @@ set -euo pipefail
 
 export TEST_OUTPUT_DIR="${TEST_OUTPUT_DIR:-/mnt/output}"
 
-modules=("attention" "logits" "rmsnorm" "rope" "token_embedding")
+modules=("attention" "moe" "logits" "rmsnorm" "rope" "token_embedding")
 for module in "${modules[@]}"; do
     echo "*** Test correctness for $module ***"
     pytest -s "$(dirname $0)/../../../test/srt/numerical_tests/comparison_tests/benchmark/test_bench_$module.py"

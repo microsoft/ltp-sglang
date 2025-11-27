@@ -18,11 +18,12 @@ jobs:
     permissions:
       contents: read
     env:
-      TEST_OUTPUT_DIR: /mnt/output
+      TEST_OUTPUT_DIR: /mnt/nvme/output
       TEST_BATCH_SIZES: "16"
       TEST_SEQ_LENS: "4096"
       TEST_RANDOM_INPUT_COUNT: "3"
       TEST_REPEAT_COUNT: "2"
+      SGLANG_USE_AITER: "false"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -38,7 +39,7 @@ jobs:
           sudo docker buildx build -t sglang/main:cuda -f scripts/ltp_scripts/dev.cuda.dockerfile .
       - name: Test correctness
         run: |
-          env | grep ^TEST_ | tee /tmp/env
+          env | grep -E '^(TEST_|SGLANG_)' | tee /tmp/env
           sudo docker run --rm --privileged --net=host --gpus=all -v /mnt:/mnt \
             --env-file /tmp/env --entrypoint /bin/bash sglang/main:cuda \
             /sgl-workspace/sglang/scripts/ltp_scripts/tests/test_correctness.sh
