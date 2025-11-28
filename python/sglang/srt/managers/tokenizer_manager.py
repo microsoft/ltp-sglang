@@ -1766,15 +1766,38 @@ class TokenizerManager:
                 state.first_token_time - state.created_time
             )
         else:
+            # Calculate accurate ITL using decode_timestamps from scheduler
             num_new_tokens = completion_tokens - state.last_completion_tokens
             if num_new_tokens:
-                new_time = time.time()
-                interval = new_time - state.last_time
-                self.metrics_collector.observe_inter_token_latency(
-                    interval,
-                    num_new_tokens,
-                )
-                state.last_time = new_time
+                # Try to use accurate decode timestamps from scheduler
+                batch_timestamps = None
+                if hasattr(recv_obj, 'decode_timestamps') and recv_obj.decode_timestamps is not None:
+                    batch_timestamps = recv_obj.decode_timestamps[i]
+
+                if batch_timestamps and len(batch_timestamps) > 0:
+                    # We have accurate timestamps for each token in this batch
+                    # Calculate ITL for each token and report them individually
+                    prev_time = state.last_time if state.last_time > 0.0 else batch_timestamps[0]
+
+                    for timestamp in batch_timestamps:
+                        if timestamp > prev_time:
+                            itl = timestamp - prev_time
+                            # Report ITL for this single token
+                            self.metrics_collector.observe_inter_token_latency(itl, 1)
+                            prev_time = timestamp
+
+                    # Update state to the last timestamp in this batch
+                    state.last_time = batch_timestamps[-1]
+                else:
+                    # Fallback: use current receive time (less accurate due to streaming intervals)
+                    new_time = time.time()
+                    interval = new_time - state.last_time
+                    self.metrics_collector.observe_inter_token_latency(
+                        interval,
+                        num_new_tokens,
+                    )
+                    state.last_time = new_time
+
                 state.last_completion_tokens = completion_tokens
 
         if state.finished:

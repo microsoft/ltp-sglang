@@ -702,6 +702,9 @@ class BatchTokenIDOut:
     # First token generation times for accurate TTFT measurement
     first_token_times: Optional[List[Optional[float]]] = None
 
+    # Decode timestamps for each token being sent in this batch (for accurate ITL)
+    decode_timestamps: Optional[List[Optional[List[float]]]] = None
+
 
 @dataclass
 class BatchMultimodalDecodeReq:
@@ -755,6 +758,9 @@ class BatchStrOut:
 
     # First token generation times for accurate TTFT measurement
     first_token_times: Optional[List[Optional[float]]] = None
+
+    # Decode timestamps for each token being sent in this batch (for accurate ITL)
+    decode_timestamps: Optional[List[Optional[List[float]]]] = None
 
 
 @dataclass

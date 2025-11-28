@@ -598,6 +598,7 @@ class Req:
         self.queue_time_start = None
         self.queue_time_end = None
         self.first_token_time: float = 0.0  # Time when first output token is generated
+        self.decode_timestamps: List[float] = []  # Timestamp after each decode iteration (for accurate ITL)
         # GPU events for accurate timing (only synchronized when reading values)
         self.prefill_start_event: Optional[torch.cuda.Event] = None
         self.prefill_end_event: Optional[torch.cuda.Event] = None

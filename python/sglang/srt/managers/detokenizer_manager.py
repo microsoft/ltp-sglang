@@ -237,6 +237,7 @@ class DetokenizerManager:
             prefill_latencies=recv_obj.prefill_latencies if hasattr(recv_obj, 'prefill_latencies') else None,
             decode_latencies=recv_obj.decode_latencies if hasattr(recv_obj, 'decode_latencies') else None,
             first_token_times=recv_obj.first_token_times if hasattr(recv_obj, 'first_token_times') else None,
+            decode_timestamps=recv_obj.decode_timestamps if hasattr(recv_obj, 'decode_timestamps') else None,
         )
 
     def handle_multimodal_decode_req(self, recv_obj: BatchMultimodalDecodeReq):
