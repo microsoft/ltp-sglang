@@ -83,6 +83,9 @@ class SchedulerOutputProcessorMixin:
 
                 if req.is_chunked <= 0:
                     # req output_ids are set here
+                    # Track first token time for TTFT measurement
+                    if len(req.output_ids) == 0 and req.first_token_time == 0.0 and self.enable_metrics:
+                        req.first_token_time = time.time()
                     req.output_ids.append(next_token_id)
                     req.check_finished()
 
@@ -240,9 +243,6 @@ class SchedulerOutputProcessorMixin:
 
             if batch.spec_algorithm.is_none():
                 # speculative worker will solve the output_ids in speculative decoding
-                # Mark first token time for TTFT measurement
-                if len(req.output_ids) == 0 and req.first_token_time == 0.0:
-                    req.first_token_time = time.time()
                 req.output_ids.append(next_token_id)
 
             req.check_finished()
@@ -699,9 +699,10 @@ class SchedulerOutputProcessorMixin:
                             decode_latency = None
                 decode_latencies.append(decode_latency)
 
-                # Get first token generation time for accurate TTFT
-                first_token_time = req.first_token_time if req.first_token_time > 0.0 else None
-                first_token_times.append(first_token_time)
+                if hasattr(req, 'first_token_time'):
+                    # Get first token generation time for accurate TTFT
+                    first_token_time = req.first_token_time if req.first_token_time > 0.0 else None
+                    first_token_times.append(first_token_time)
 
         # Send to detokenizer
         if rids:
