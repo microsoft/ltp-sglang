@@ -699,6 +699,9 @@ class BatchTokenIDOut:
     prefill_latencies: Optional[List[Optional[float]]] = None
     decode_latencies: Optional[List[Optional[float]]] = None
 
+    # First token generation times for accurate TTFT measurement
+    first_token_times: Optional[List[Optional[float]]] = None
+
 
 @dataclass
 class BatchMultimodalDecodeReq:
@@ -749,6 +752,9 @@ class BatchStrOut:
     # GPU timing latencies (in milliseconds) for metrics
     prefill_latencies: Optional[List[Optional[float]]] = None
     decode_latencies: Optional[List[Optional[float]]] = None
+
+    # First token generation times for accurate TTFT measurement
+    first_token_times: Optional[List[Optional[float]]] = None
 
 
 @dataclass

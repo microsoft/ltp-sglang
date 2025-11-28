@@ -240,6 +240,9 @@ class SchedulerOutputProcessorMixin:
 
             if batch.spec_algorithm.is_none():
                 # speculative worker will solve the output_ids in speculative decoding
+                # Mark first token time for TTFT measurement
+                if len(req.output_ids) == 0 and req.first_token_time == 0.0:
+                    req.first_token_time = time.time()
                 req.output_ids.append(next_token_id)
 
             req.check_finished()
@@ -669,6 +672,7 @@ class SchedulerOutputProcessorMixin:
         # Compute GPU timing latencies for metrics (synchronize events and convert to float)
         prefill_latencies = []
         decode_latencies = []
+        first_token_times = []
         if self.enable_metrics and rids:
             for idx, req in enumerate(reqs):
                 # Compute prefill latency from GPU events
@@ -694,6 +698,10 @@ class SchedulerOutputProcessorMixin:
                             logger.warning(f"[DEBUG] Req {idx}: Failed to compute decode latency: {e}")
                             decode_latency = None
                 decode_latencies.append(decode_latency)
+
+                # Get first token generation time for accurate TTFT
+                first_token_time = req.first_token_time if req.first_token_time > 0.0 else None
+                first_token_times.append(first_token_time)
 
         # Send to detokenizer
         if rids:
@@ -730,6 +738,7 @@ class SchedulerOutputProcessorMixin:
                     output_hidden_states,
                     prefill_latencies if self.enable_metrics else None,
                     decode_latencies if self.enable_metrics else None,
+                    first_token_times if self.enable_metrics else None,
                 )
             )
 

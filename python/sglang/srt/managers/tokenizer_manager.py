@@ -1739,10 +1739,27 @@ class TokenizerManager:
             else 0
         )
 
+        # Use accurate first token time from scheduler if available
         if (
             state.first_token_time == 0.0
             and self.disaggregation_mode != DisaggregationMode.PREFILL
         ):
+            # Check if we have first_token_time from the batch (set when first token was generated in scheduler)
+            if hasattr(recv_obj, 'first_token_times') and recv_obj.first_token_times is not None:
+                batch_first_token_time = recv_obj.first_token_times[i]
+                if batch_first_token_time is not None and batch_first_token_time > 0.0:
+                    # Use the accurate first token time from when it was generated
+                    state.first_token_time = batch_first_token_time
+                    state.last_time = time.time()
+                    state.last_completion_tokens = completion_tokens
+                    logger.debug(f"First token generated for request {state.obj.rid}, Completion tokens: 1 (accurate)")
+                    self.metrics_collector.observe_time_to_first_token(
+                        state.first_token_time - state.created_time
+                    )
+                    return
+
+            # Fallback: use current time if first_token_time not available from batch
+            logger.debug(f"First token received for request {state.obj.rid}, Completion tokens: {completion_tokens}")
             state.first_token_time = state.last_time = time.time()
             state.last_completion_tokens = completion_tokens
             self.metrics_collector.observe_time_to_first_token(
