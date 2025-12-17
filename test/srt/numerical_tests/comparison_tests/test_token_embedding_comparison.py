@@ -4,7 +4,6 @@
 import os
 
 import pytest
-import torch
 
 from sglang.srt.layers.vocab_parallel_embedding import VocabParallelEmbedding
 from sglang.test.numerical_tests.comparison_module import CompareModule

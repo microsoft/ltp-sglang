@@ -20,7 +20,6 @@ from transformers import AutoModelForCausalLM
 
 from sglang.srt.entrypoints.verl_engine import VerlEngine
 from sglang.srt.hf_transformers_utils import get_tokenizer
-from sglang.srt.utils import is_port_available
 from sglang.test.runners import (
     HFRunner,
     SRTRunner,

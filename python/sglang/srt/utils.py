@@ -83,7 +83,6 @@ from torch.func import functional_call
 from torch.library import Library
 from torch.profiler import ProfilerActivity, profile, record_function
 from torch.utils._contextlib import _DecoratorContextManager
-from triton.runtime.cache import FileCacheManager
 
 from sglang.srt.metrics.func_timer import enable_func_timer
 
@@ -204,7 +203,6 @@ def support_triton(backend: str) -> bool:
 
 
 try:
-    import sgl_kernel
 
     is_intel_amx_backend_available = hasattr(
         torch.ops.sgl_kernel, "convert_weight_packed"

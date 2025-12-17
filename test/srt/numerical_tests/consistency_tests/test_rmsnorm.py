@@ -1,12 +1,9 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-import sys
-import uuid
 
 import pytest
 import torch
-from torch import nn
 
 from sglang.srt.layers.layernorm import RMSNorm
 from sglang.test.numerical_tests.test_module import TestModule

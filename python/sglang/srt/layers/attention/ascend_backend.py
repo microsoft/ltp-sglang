@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING, Optional
 
 import torch
 import torch_npu
-from torch.nn.functional import scaled_dot_product_attention
 
 from sglang.srt.configs.model_config import AttentionArch
 from sglang.srt.layers.attention.base_attn_backend import AttentionBackend
