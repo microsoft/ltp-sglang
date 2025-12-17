@@ -1,14 +1,14 @@
 import math
 import re
 from itertools import product
-from typing import List, Literal, Optional, TypedDict, Union
+from typing import List, Optional, Union
 
 import numpy as np
 import torch
 from PIL import Image
 from torchvision import transforms
 from torchvision.transforms import InterpolationMode
-from transformers import BatchFeature, TensorType
+from transformers import BatchFeature, ProcessorMixin, TensorType
 
 from sglang.srt.models.step3_vl import Step3VLForConditionalGeneration
 from sglang.srt.multimodal.processors.base_processor import (
@@ -276,6 +276,8 @@ class Step3VLProcessor:
         super().__init__()
 
         self.config = config
+        if isinstance(tokenizer, ProcessorMixin):
+            tokenizer = tokenizer.tokenizer
         self.tokenizer = tokenizer
 
         self.image_size = 728
