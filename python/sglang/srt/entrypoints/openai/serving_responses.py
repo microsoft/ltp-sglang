@@ -199,7 +199,7 @@ class OpenAIServingResponses(OpenAIServingChat):
 
         except (ValueError, TypeError, RuntimeError, jinja2.TemplateError) as e:
             logger.exception("Error in preprocessing prompt inputs")
-            return self.create_error_response(f"{e} {e.__cause__}")
+            return self.create_error_response("Invalid request.", status_code=400)
 
         request_metadata = RequestResponseMetadata(request_id=request.request_id)
         if raw_request:
@@ -294,7 +294,8 @@ class OpenAIServingResponses(OpenAIServingChat):
                     )
                     generators.append(generator)
             except ValueError as e:
-                return self.create_error_response(str(e))
+                logger.exception("ValueError in engine prompts creation")
+                return self.create_error_response("Invalid input.", status_code=400)
 
             assert len(generators) == 1
             (result_generator,) = generators
@@ -363,7 +364,8 @@ class OpenAIServingResponses(OpenAIServingChat):
                 )
                 return result
             except Exception as e:
-                return self.create_error_response(str(e))
+                logger.exception("Error in full generator")
+                return self.create_error_response("An internal error has occurred.", status_code=500)
         return self.create_error_response("Unknown error")
 
     async def _make_request(
@@ -444,7 +446,8 @@ class OpenAIServingResponses(OpenAIServingChat):
         except asyncio.CancelledError:
             return self.create_error_response("Client disconnected")
         except ValueError as e:
-            return self.create_error_response(str(e))
+            logger.exception("ValueError in result generator")
+            return self.create_error_response("Invalid input.", status_code=400)
 
         if self.use_harmony:
             assert isinstance(context, HarmonyContext)
@@ -731,8 +734,8 @@ class OpenAIServingResponses(OpenAIServingChat):
                 **kwargs,
             )
         except Exception as e:
-            logger.exception("Background request failed for %s", request.request_id)
-            response = self.create_error_response(str(e))
+            logger.exception("Background request failed for %s: %s", request.request_id, e)
+            response = self.create_error_response("An internal error has occurred.", status_code=500)
 
         if isinstance(response, ORJSONResponse):
             # If the request has failed, update the status to "failed"
