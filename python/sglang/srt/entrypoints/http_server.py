@@ -1365,7 +1365,8 @@ def _create_error_response(e):
     logging.exception("[http_server] Exception occurred during request handling:")
     # Return a generic error message to the client
     return ORJSONResponse(
-        {"error": {"message": "An internal error has occurred."}}, status_code=HTTPStatus.BAD_REQUEST
+        {"error": {"message": "An internal error has occurred."}},
+        status_code=HTTPStatus.BAD_REQUEST,
     )
 
 

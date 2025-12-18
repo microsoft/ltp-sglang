@@ -365,7 +365,9 @@ class OpenAIServingResponses(OpenAIServingChat):
                 return result
             except Exception as e:
                 logger.exception("Error in full generator")
-                return self.create_error_response("An internal error has occurred.", status_code=500)
+                return self.create_error_response(
+                    "An internal error has occurred.", status_code=500
+                )
         return self.create_error_response("Unknown error")
 
     async def _make_request(
@@ -734,8 +736,12 @@ class OpenAIServingResponses(OpenAIServingChat):
                 **kwargs,
             )
         except Exception as e:
-            logger.exception("Background request failed for %s: %s", request.request_id, e)
-            response = self.create_error_response("An internal error has occurred.", status_code=500)
+            logger.exception(
+                "Background request failed for %s: %s", request.request_id, e
+            )
+            response = self.create_error_response(
+                "An internal error has occurred.", status_code=500
+            )
 
         if isinstance(response, ORJSONResponse):
             # If the request has failed, update the status to "failed"
