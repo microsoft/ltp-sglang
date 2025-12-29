@@ -58,7 +58,7 @@ class TestMoE(TestModule):
         log_dir = os.path.join(
             LOG_DIR,
             "moe",
-            f"{moe_module_impl.__name__}-{module_config['hidden_size']}-{dtype}",
+            f"{moe_module_impl.__name__}-{module_config.hidden_size}-{dtype}",
             f"weights-{weight_prefix}",
         )
         os.makedirs(log_dir, exist_ok=True)
@@ -72,7 +72,7 @@ class TestMoE(TestModule):
         def random_input_func(bs: int, sl: int, dtype: torch.dtype) -> torch.Tensor:
             """Generate a random input tensor for MoE."""
             return torch.randn(
-                bs * sl, module_config["hidden_size"], dtype=dtype
+                bs * sl, module_config.hidden_size, dtype=dtype
             ).cuda()
 
         self._run_module_random_input(

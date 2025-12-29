@@ -13,7 +13,6 @@ from sglang.srt.distributed import (
     tensor_model_parallel_all_reduce,
 )
 from sglang.srt.layers.linear import ReplicatedLinear
-from sglang.srt.layers.moe.ep_moe.layer import EPMoE
 from sglang.srt.layers.moe.fused_moe_triton import FusedMoE
 from sglang.srt.layers.moe.topk import TopK
 from sglang.srt.model_loader.weight_utils import default_weight_loader
@@ -48,7 +47,7 @@ class MoE(nn.Module):
     def __init__(
         self,
         config: PretrainedConfig,
-        MoEImpl: Union[EPMoE, FusedMoE],
+        MoEImpl: FusedMoE,
         prefix: str = "",
     ):
         super().__init__()

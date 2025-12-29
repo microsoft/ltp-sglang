@@ -222,6 +222,9 @@ class MockModelRunner:
         # Required by torch native backend
         self.server_args = object.__new__(ServerArgs)
         self.server_args.model_path = "fake_model_path"
+        self.token_to_kv_pool_allocator=None
+        self.hybrid_gdn_config = None
+        self.kimi_linear_config = None
 
 
 class AttentionLayerTester:

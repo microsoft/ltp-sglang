@@ -5,6 +5,7 @@ import pytest
 import torch
 
 from sglang.srt.layers.dp_attention import initialize_dp_attention
+from sglang.srt.server_args import get_global_server_args
 from sglang.test.numerical_tests.modules.sglang.test_attention import (
     AttentionLayer,
     AttentionLayerTester,
@@ -41,17 +42,11 @@ class TestAttentionLayer(TestModule):
     Test the consistency of Attention Layer computation.
     """
 
-    def setup_method(self, method):
-        super().setup_method(method)
+    @classmethod
+    def setup_class(cls):
+        super().setup_class()
         # Initialize the distributed environment for Triton attention backend
-        initialize_dp_attention(
-            enable_dp_attention=False,
-            tp_rank=0,
-            tp_size=1,
-            dp_size=1,
-            moe_dense_tp_size=None,
-            pp_size=1,
-        )
+        
 
     @pytest.mark.parametrize("module_config", MODULE_CONFIGS)
     @pytest.mark.parametrize("weight_prefix", weight_prefixes)
@@ -61,18 +56,25 @@ class TestAttentionLayer(TestModule):
         self, module_config, weight_prefix, attn_backend, dtype
     ):
         """Test the Attention Layer with random weights."""
+
+        if attn_backend == "triton":
+            initialize_dp_attention(
+                server_args=get_global_server_args(),
+                model_config=module_config,
+            )
+                
         # Create the Attention Layer with the given configuration
         sgl_module = AttentionLayer(
-            hidden_size=module_config["hidden_size"],
-            num_heads=module_config["num_attention_heads"],
-            num_kv_heads=module_config["num_key_value_heads"],
-            rope_theta=module_config["rope_theta"],
-            rope_scaling=module_config["rope_scaling"],
-            max_position_embeddings=module_config["max_position_embeddings"],
-            head_dim=module_config["head_dim"],
-            rms_norm_eps=module_config["rms_norm_eps"],
-            attention_bias=module_config["attention_bias"],
-            qk_layernorm=module_config["qk_layernorm"],
+            hidden_size=module_config.hidden_size,
+            num_heads=module_config.num_attention_heads,
+            num_kv_heads=module_config.num_key_value_heads,
+            rope_theta=module_config.rope_theta,
+            rope_scaling=module_config.rope_scaling,
+            max_position_embeddings=module_config.max_position_embeddings,
+            head_dim=module_config.head_dim,
+            rms_norm_eps=module_config.rms_norm_eps,
+            attention_bias=module_config.attention_bias,
+            qk_layernorm=module_config.qk_layernorm,
         )
         if weight_prefix.count("random") > 0:
             # Load random weights if the prefix indicates so
@@ -84,7 +86,7 @@ class TestAttentionLayer(TestModule):
         log_dir = os.path.join(
             LOG_DIR,
             "attention_layer",
-            f"{module_config['hidden_size']}-{module_config['num_attention_heads']}-{module_config['num_key_value_heads']}-{dtype}",
+            f"{module_config.hidden_size}-{module_config.num_attention_heads}-{module_config.num_key_value_heads}-{dtype}",
             f"weights-{weight_prefix}",
         )
         os.makedirs(log_dir, exist_ok=True)
@@ -107,7 +109,7 @@ class TestAttentionLayer(TestModule):
         def random_input_func(bs: int, sl: int, dtype: torch.dtype) -> torch.Tensor:
             """Generate a random input tensor for the Attention Layer."""
             hidden_states = torch.randn(
-                bs * sl, module_config["hidden_size"], dtype=dtype
+                bs * sl, module_config.hidden_size, dtype=dtype
             ).cuda()
             positions = (
                 torch.arange(sl, dtype=torch.int64, device=hidden_states.device)
