@@ -40,13 +40,7 @@ if not CHECKPOINT_PATH:
 class TestAttentionLayer(TestModule):
     """
     Test the consistency of Attention Layer computation.
-    """
-
-    @classmethod
-    def setup_class(cls):
-        super().setup_class()
-        # Initialize the distributed environment for Triton attention backend
-        
+    """    
 
     @pytest.mark.parametrize("module_config", MODULE_CONFIGS)
     @pytest.mark.parametrize("weight_prefix", weight_prefixes)

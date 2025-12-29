@@ -6,13 +6,18 @@ import os
 
 import torch
 
+from sglang.srt.server_args import (
+    ServerArgs,
+    set_global_server_args_for_scheduler,
+)
 from sglang.srt.distributed.parallel_state import (
     destroy_distributed_environment,
-    destroy_expert_parallel,
     destroy_model_parallel,
     init_distributed_environment,
     initialize_model_parallel,
 )
+from sglang.srt.utils.common import get_device
+
 from sglang.test.numerical_tests.bench_module import BenchConfig, TraceMetadata
 from sglang.test.numerical_tests.utils.check_tensor import compare_output_lists
 from sglang.test.numerical_tests.utils.common import (
@@ -30,29 +35,45 @@ from sglang.test.numerical_tests.utils.load_data import (
 
 
 class CompareModule:
+    
+    @classmethod
+    def setup_class(cls):
+        """Setup once for the entire test class."""
+        cls.setup_distributed()
+        cls.setup_parallelism()
+        device = get_device()
+        server_args = ServerArgs(model_path="dummy", device=device)
+        set_global_server_args_for_scheduler(server_args)
 
-    def setup_method(self, method):
-        self.setup_distributed()
-        self.setup_parallelism()
-
-    def setup_distributed(self):
+    @classmethod
+    def setup_distributed(cls):
+        if not torch.distributed.is_initialized():
+            torch.distributed.init_process_group(
+                backend="nccl" if torch.cuda.is_available() else "gloo",
+                init_method="tcp://127.0.0.1:23456",
+                world_size=1,
+                rank=0,
+            )
         init_distributed_environment(
-            backend="nccl",
             world_size=1,
             rank=0,
+            distributed_init_method="tcp://127.0.0.1:23456",
             local_rank=0,
-            distributed_init_method="env://127.0.0.1:29500",
+            backend="nccl" if torch.cuda.is_available() else "gloo",
         )
 
-    def setup_parallelism(self):
+    @classmethod
+    def setup_parallelism(cls):
         initialize_model_parallel(
             tensor_model_parallel_size=1,
         )
 
-    def teardown_method(self, method):
+    @classmethod
+    def teardown_class(cls):
+        """Cleanup once after all tests in the class complete."""
         destroy_model_parallel()
-        destroy_expert_parallel()
         destroy_distributed_environment()
+
 
     def _test_module_comparison(
         self,
