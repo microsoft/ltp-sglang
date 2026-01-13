@@ -174,5 +174,5 @@ version_file = "sglang/_version.py"
 git_describe_command = ["git", "describe", "--tags", "--long", "--match", "v*"]
 
 [tool.codespell]
-ignore-words-list = "ans, als, hel, boostrap, childs, te, vas, hsa, ment"
+ignore-words-list = "thi, dout, ser, PRIS, ans, als, hel, boostrap, childs, te, vas, hsa, ment"
 skip = "*.json,*.jsonl,*.patch,*.txt"
