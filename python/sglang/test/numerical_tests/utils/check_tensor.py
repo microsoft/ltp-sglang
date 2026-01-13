@@ -63,7 +63,7 @@ def get_mean_std(tensor_list: list[torch.Tensor]):
 def compare_output_lists(bench_output, sglang_output):
     """Compare two lists of tensors and return the maximum absolute difference."""
     if len(bench_output) != len(sglang_output):
-        raise ValueError("Output lists have different lengths.")
+        raise ValueError(f"Output lists have different lengths: {len(bench_output)=} vs {len(sglang_output)=}")
 
     bench_mean, bench_std = get_mean_std(bench_output)
     sglang_mean, sglang_std = get_mean_std(sglang_output)

@@ -33,13 +33,13 @@ class TestTokenEmbedding(TestModule):
     @pytest.mark.parametrize("weight_prefix", weight_prefixes)
     @pytest.mark.parametrize("dtype", TEST_DTYPES)
     def test_sglang_embedding(
-        self, embedding_config: dict, weight_prefix: str, dtype: torch.dtype
+        self, embedding_config, weight_prefix: str, dtype: torch.dtype
     ):
         """Test the token embedding layer."""
         # Initialize the embedding module
         embedding_module = VocabParallelEmbedding(
-            embedding_config["vocab_size"],
-            embedding_config["hidden_size"],
+            embedding_config.vocab_size,
+            embedding_config.hidden_size,
         )
         if weight_prefix.count("random") > 0:
             # Load random weights for the embedding module
@@ -53,7 +53,7 @@ class TestTokenEmbedding(TestModule):
         log_dir = os.path.join(
             LOG_DIR,
             "token_embedding",
-            f"{embedding_config['hidden_size']}_{embedding_config['vocab_size']}",
+            f"{embedding_config.hidden_size}_{embedding_config.vocab_size}",
             f"weights-{weight_prefix}",
         )
         os.makedirs(log_dir, exist_ok=True)
@@ -62,7 +62,7 @@ class TestTokenEmbedding(TestModule):
             """Generate a random input tensor for token embedding."""
             return torch.randint(
                 low=0,
-                high=embedding_config["vocab_size"],
+                high=embedding_config.vocab_size,
                 size=(bs, sl),
                 dtype=torch.int64,
             ).cuda()

@@ -5,8 +5,11 @@ import json
 import os
 
 import torch
-from torch import nn
 
+from sglang.srt.server_args import (
+    ServerArgs,
+    set_global_server_args_for_scheduler,
+)
 from sglang.srt.distributed.parallel_state import (
     destroy_distributed_environment,
     destroy_model_parallel,
@@ -14,6 +17,7 @@ from sglang.srt.distributed.parallel_state import (
     initialize_model_parallel,
 )
 from sglang.srt.utils import set_random_seed
+from sglang.srt.utils.common import get_device
 from sglang.test.numerical_tests.utils.check_tensor import compare_tensors
 from sglang.test.numerical_tests.utils.common import *
 
@@ -23,26 +27,41 @@ class TestModule:
     Base class for testing consistency of SGLang modules
     """
 
-    def setup_method(self, method):
-        self.setup_distributed()
-        self.setup_parallelism()
-        self.setup_random_seed()
+    @classmethod
+    def setup_class(cls):
+        """Setup once for the entire test class."""
+        cls.setup_distributed()
+        cls.setup_parallelism()
+        cls.setup_random_seed()
+        device = get_device()
+        server_args = ServerArgs(model_path="dummy", device=device)
+        set_global_server_args_for_scheduler(server_args)
 
-    def setup_distributed(self):
+    @classmethod
+    def setup_distributed(cls):
+        if not torch.distributed.is_initialized():
+            torch.distributed.init_process_group(
+                backend="nccl" if torch.cuda.is_available() else "gloo",
+                init_method="tcp://127.0.0.1:23456",
+                world_size=1,
+                rank=0,
+            )
         init_distributed_environment(
-            backend="nccl",
             world_size=1,
             rank=0,
+            distributed_init_method="tcp://127.0.0.1:23456",
             local_rank=0,
-            distributed_init_method="env://127.0.0.1:29500",
+            backend="nccl" if torch.cuda.is_available() else "gloo",
         )
 
-    def setup_parallelism(self):
+    @classmethod
+    def setup_parallelism(cls):
         initialize_model_parallel(
             tensor_model_parallel_size=1,
         )
 
-    def setup_random_seed(self):
+    @classmethod
+    def setup_random_seed(cls):
         random_seed = 42
         set_random_seed(random_seed)
 
@@ -105,6 +124,8 @@ class TestModule:
         with open(os.path.join(log_dir, RESULTS_FILE), "w") as f:
             json.dump(results, f, indent=4)
 
-    def teardown_method(self, method):
+    @classmethod
+    def teardown_class(cls):
+        """Cleanup once after all tests in the class complete."""
         destroy_model_parallel()
         destroy_distributed_environment()

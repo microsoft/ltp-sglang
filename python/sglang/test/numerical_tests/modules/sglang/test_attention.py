@@ -16,12 +16,16 @@ from sglang.srt.layers.attention.triton_backend import TritonAttnBackend
 from sglang.srt.layers.layernorm import RMSNorm
 from sglang.srt.layers.linear import QKVParallelLinear, RowParallelLinear
 from sglang.srt.layers.radix_attention import RadixAttention
-from sglang.srt.layers.rotary_embedding import get_rope
+from sglang.srt.layers.rotary_embedding import MRotaryEmbedding, get_rope
 from sglang.srt.mem_cache.memory_pool import MHATokenToKVPool
 from sglang.srt.model_executor.forward_batch_info import ForwardBatch, ForwardMode
 from sglang.srt.model_loader.weight_utils import default_weight_loader
 from sglang.srt.server_args import ServerArgs
-
+from sglang.srt.models.utils import (
+    apply_qk_norm,
+    create_fused_set_kv_buffer_arg,
+    enable_fused_set_kv_buffer,
+)
 
 class AttentionLayer(nn.Module):
     """
@@ -88,6 +92,13 @@ class AttentionLayer(nn.Module):
             base=rope_theta,
             rope_scaling=rope_scaling,
         )
+        self.compatible_with_fused_kv_buffer = (
+            False if isinstance(self.rotary_emb, MRotaryEmbedding) else True
+        )
+        self.compatible_with_fused_qk_norm_rope = (
+            not isinstance(self.rotary_emb, MRotaryEmbedding)
+        ) and self.head_dim in (64, 128, 256)
+
         self.attn = RadixAttention(
             self.num_heads,
             self.head_dim,
@@ -121,7 +132,18 @@ class AttentionLayer(nn.Module):
         if self.qk_layernorm:
             # Apply layer normalization to q and k
             q, k = self._apply_qk_norm(q, k)
-        q, k = self.rotary_emb(positions, q, k)
+
+        q, k = self.rotary_emb(positions, q, k,
+                fused_set_kv_buffer_arg=(
+                    create_fused_set_kv_buffer_arg(
+                        value=v,
+                        layer=self.attn,
+                        forward_batch=forward_batch,
+                    )
+                    if enable_fused_set_kv_buffer(forward_batch)
+                    and self.compatible_with_fused_kv_buffer
+                    else None
+                ))
         attn_output = self.attn(q, k, v, forward_batch)
         output, _ = self.o_proj(attn_output)
         return output
@@ -222,6 +244,9 @@ class MockModelRunner:
         # Required by torch native backend
         self.server_args = object.__new__(ServerArgs)
         self.server_args.model_path = "fake_model_path"
+        self.token_to_kv_pool_allocator=None
+        self.hybrid_gdn_config = None
+        self.kimi_linear_config = None
 
 
 class AttentionLayerTester:

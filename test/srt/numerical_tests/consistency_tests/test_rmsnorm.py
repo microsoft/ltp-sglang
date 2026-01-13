@@ -43,7 +43,7 @@ class TestRMSNorm(TestModule):
         print(
             f"Testing RMSNorm with weights: {module_config=} {weight_prefix=} {dtype=}"
         )
-        rmsnorm = RMSNorm(module_config["hidden_size"], module_config["rms_norm_eps"])
+        rmsnorm = RMSNorm(module_config.hidden_size, module_config.rms_norm_eps)
         if weight_prefix.count("random") == 0:
             # Load weights from a checkpoint if not a random prefix
             load_weight_from_hf_ckp(rmsnorm, weight_prefix, dtype)
@@ -54,7 +54,7 @@ class TestRMSNorm(TestModule):
         log_dir = os.path.join(
             LOG_DIR,
             "rmsnorm",
-            f"{module_config['hidden_size']}-{dtype}",
+            f"{module_config.hidden_size}-{dtype}",
             f"weights-{weight_prefix}",
         )
         os.makedirs(log_dir, exist_ok=True)
@@ -68,7 +68,7 @@ class TestRMSNorm(TestModule):
         def random_input_func(bs, sl, dtype):
             """Generate random input tensor for RMSNorm."""
             return torch.randn(
-                bs * sl, module_config["hidden_size"], dtype=dtype
+                bs * sl, module_config.hidden_size, dtype=dtype
             ).cuda()
 
         self._run_module_random_input(
