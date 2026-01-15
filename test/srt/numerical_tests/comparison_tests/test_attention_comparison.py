@@ -64,9 +64,7 @@ class TestAttentionComparison(CompareModule):
                 seq_len=trace_metadata.seq_len,
             )
             # Reshape the input tensor for the SGLang module
-            input_tensor = (
-                inputs["hidden_states"].cuda()
-            )
+            input_tensor = inputs["hidden_states"].cuda()
             # Create position ids
             positions = torch.arange(
                 trace_metadata.seq_len, dtype=torch.int64, device=input_tensor.device
