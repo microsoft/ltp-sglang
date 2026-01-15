@@ -67,9 +67,7 @@ class TestRMSNorm(TestModule):
 
         def random_input_func(bs, sl, dtype):
             """Generate random input tensor for RMSNorm."""
-            return torch.randn(
-                bs * sl, module_config.hidden_size, dtype=dtype
-            ).cuda()
+            return torch.randn(bs * sl, module_config.hidden_size, dtype=dtype).cuda()
 
         self._run_module_random_input(
             forward_func,

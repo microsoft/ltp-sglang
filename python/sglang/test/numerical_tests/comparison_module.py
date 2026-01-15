@@ -6,18 +6,14 @@ import os
 
 import torch
 
-from sglang.srt.server_args import (
-    ServerArgs,
-    set_global_server_args_for_scheduler,
-)
 from sglang.srt.distributed.parallel_state import (
     destroy_distributed_environment,
     destroy_model_parallel,
     init_distributed_environment,
     initialize_model_parallel,
 )
+from sglang.srt.server_args import ServerArgs, set_global_server_args_for_scheduler
 from sglang.srt.utils.common import get_device
-
 from sglang.test.numerical_tests.bench_module import BenchConfig, TraceMetadata
 from sglang.test.numerical_tests.utils.check_tensor import compare_output_lists
 from sglang.test.numerical_tests.utils.common import (
@@ -35,7 +31,7 @@ from sglang.test.numerical_tests.utils.load_data import (
 
 
 class CompareModule:
-    
+
     @classmethod
     def setup_class(cls):
         """Setup once for the entire test class."""

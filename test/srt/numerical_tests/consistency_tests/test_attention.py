@@ -40,7 +40,7 @@ if not CHECKPOINT_PATH:
 class TestAttentionLayer(TestModule):
     """
     Test the consistency of Attention Layer computation.
-    """    
+    """
 
     @pytest.mark.parametrize("module_config", MODULE_CONFIGS)
     @pytest.mark.parametrize("weight_prefix", weight_prefixes)
@@ -56,7 +56,7 @@ class TestAttentionLayer(TestModule):
                 server_args=get_global_server_args(),
                 model_config=module_config,
             )
-                
+
         # Create the Attention Layer with the given configuration
         sgl_module = AttentionLayer(
             hidden_size=module_config.hidden_size,
@@ -105,10 +105,9 @@ class TestAttentionLayer(TestModule):
             hidden_states = torch.randn(
                 bs, sl, module_config.hidden_size, dtype=dtype
             ).cuda()
-            positions = (
-                torch.arange(sl, dtype=torch.int64, device=hidden_states.device)
-                .repeat(bs, 1)
-            )
+            positions = torch.arange(
+                sl, dtype=torch.int64, device=hidden_states.device
+            ).repeat(bs, 1)
             return positions, hidden_states, bs, sl
 
         self._run_module_random_input(

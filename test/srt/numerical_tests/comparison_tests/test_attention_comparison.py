@@ -41,7 +41,7 @@ class TestAttentionComparison(CompareModule):
                     server_args=get_global_server_args(),
                     model_config=module_config,
                 )
-                
+
             return AttentionLayer(
                 hidden_size=module_config.hidden_size,
                 num_heads=module_config.num_attention_heads,

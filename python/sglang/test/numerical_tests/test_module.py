@@ -6,16 +6,13 @@ import os
 
 import torch
 
-from sglang.srt.server_args import (
-    ServerArgs,
-    set_global_server_args_for_scheduler,
-)
 from sglang.srt.distributed.parallel_state import (
     destroy_distributed_environment,
     destroy_model_parallel,
     init_distributed_environment,
     initialize_model_parallel,
 )
+from sglang.srt.server_args import ServerArgs, set_global_server_args_for_scheduler
 from sglang.srt.utils import set_random_seed
 from sglang.srt.utils.common import get_device
 from sglang.test.numerical_tests.utils.check_tensor import compare_tensors
