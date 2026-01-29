@@ -7,6 +7,7 @@ import pytest
 import torch
 
 from sglang.srt.layers.dp_attention import initialize_dp_attention
+from sglang.srt.server_args import get_global_server_args
 from sglang.test.numerical_tests.comparison_module import CompareModule
 from sglang.test.numerical_tests.modules.sglang.test_attention import (
     AttentionLayer,
@@ -27,18 +28,6 @@ attention_backends = [
 class TestAttentionComparison(CompareModule):
     """Test class for comparing Attention implementation with benchmarks."""
 
-    def setup_method(self, method):
-        super().setup_method(method)
-        # Initialize the distributed environment for Triton attention backend
-        initialize_dp_attention(
-            enable_dp_attention=False,
-            tp_rank=0,
-            tp_size=1,
-            dp_size=1,
-            moe_dense_tp_size=None,
-            pp_size=1,
-        )
-
     @pytest.mark.parametrize("attn_backend", attention_backends)
     @pytest.mark.parametrize("dtype", TEST_DTYPES)
     def test_attention_comparison(self, attn_backend, dtype):
@@ -46,6 +35,13 @@ class TestAttentionComparison(CompareModule):
 
         def module_init_func(module_config):
             """Initialize the Attention module with the given configuration."""
+
+            if attn_backend == "triton":
+                initialize_dp_attention(
+                    server_args=get_global_server_args(),
+                    model_config=module_config,
+                )
+
             return AttentionLayer(
                 hidden_size=module_config.hidden_size,
                 num_heads=module_config.num_attention_heads,
@@ -68,19 +64,11 @@ class TestAttentionComparison(CompareModule):
                 seq_len=trace_metadata.seq_len,
             )
             # Reshape the input tensor for the SGLang module
-            input_tensor = (
-                inputs["hidden_states"].view(-1, sgl_module.hidden_size).cuda()
-            )
-
-            positions = (
-                torch.arange(
-                    trace_metadata.seq_len,
-                    dtype=torch.int64,
-                    device=input_tensor.device,
-                )
-                .repeat(trace_metadata.batch_size, 1)
-                .unsqueeze(0)
-            )
+            input_tensor = inputs["hidden_states"].cuda()
+            # Create position ids
+            positions = torch.arange(
+                trace_metadata.seq_len, dtype=torch.int64, device=input_tensor.device
+            ).repeat(trace_metadata.batch_size, 1)
             # Forward the module
             output = module_tester.forward(positions, input_tensor)
             # Reshape it to the match the expected output shape

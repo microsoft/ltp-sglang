@@ -5,6 +5,7 @@ import uuid
 
 import pytest
 import torch
+from transformers import PretrainedConfig
 
 from sglang.srt.layers.rotary_embedding import get_rope
 from sglang.test.numerical_tests.test_module import TestModule
@@ -19,15 +20,15 @@ class TestRoPE(TestModule):
 
     @pytest.mark.parametrize("rope_config", MODULE_CONFIGS)
     @pytest.mark.parametrize("dtype", TEST_DTYPES)
-    def test_sglang_rope(self, rope_config: dict, dtype: torch.dtype):
+    def test_sglang_rope(self, rope_config: PretrainedConfig, dtype: torch.dtype):
         """Test the Rotary Embedding layer."""
         # Initialize the Rotary Embedding module
         rope_module = get_rope(
-            head_size=rope_config["head_dim"],
-            rotary_dim=rope_config["head_dim"],
-            max_position=rope_config["max_position_embeddings"],
-            base=rope_config["rope_theta"],
-            rope_scaling=rope_config["rope_scaling"],
+            head_size=rope_config.head_dim,
+            rotary_dim=rope_config.head_dim,
+            max_position=rope_config.max_position_embeddings,
+            base=rope_config.rope_theta,
+            rope_scaling=rope_config.rope_scaling,
         )
         rope_module = rope_module.cuda()
         rope_module.eval()
@@ -37,7 +38,7 @@ class TestRoPE(TestModule):
         log_dir = os.path.join(
             LOG_DIR,
             "rope",
-            f"{rope_config['head_dim']}_{rope_config['num_attention_heads']}",
+            f"{rope_config.head_dim}_{rope_config.num_attention_heads}",
             f"rope-{uuid.uuid4().hex[:8]}",
         )
         os.makedirs(log_dir, exist_ok=True)
@@ -58,11 +59,11 @@ class TestRoPE(TestModule):
             """Generate random input tensor for RoPE."""
             positions = torch.arange(sl, dtype=torch.int64).cuda()
             q = torch.randn(
-                (sl, rope_config["num_attention_heads"] * rope_config["head_dim"]),
+                (sl, rope_config.num_attention_heads * rope_config.head_dim),
                 dtype=dtype,
             ).cuda()
             k = torch.randn(
-                (sl, rope_config["num_key_value_heads"] * rope_config["head_dim"]),
+                (sl, rope_config.num_key_value_heads * rope_config.head_dim),
                 dtype=dtype,
             ).cuda()
             return positions, q, k

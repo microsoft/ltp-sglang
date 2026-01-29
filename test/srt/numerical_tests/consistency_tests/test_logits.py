@@ -31,14 +31,16 @@ class TestLogits(TestModule):
     @pytest.mark.parametrize("logits_config", MODULE_CONFIGS)
     @pytest.mark.parametrize("weight_prefix", weight_prefixes)
     @pytest.mark.parametrize("dtype", TEST_DTYPES)
-    def test_sglang_logits(
-        self, logits_config: dict, weight_prefix: str, dtype: torch.dtype
-    ):
+    def test_sglang_logits(self, logits_config, weight_prefix: str, dtype: torch.dtype):
         """Test the Logits layer."""
+        print(
+            f"Testing Logits with weights: {logits_config=} {weight_prefix=} {dtype=}"
+        )
+
         # Initialize the Logits module
         mock_config = MockLogitsConfig(
-            vocab_size=logits_config["vocab_size"],
-            hidden_size=logits_config["hidden_size"],
+            vocab_size=logits_config.vocab_size,
+            hidden_size=logits_config.hidden_size,
         )
         logits_module = LogitsModule(mock_config)
         if weight_prefix.count("random") > 0:
