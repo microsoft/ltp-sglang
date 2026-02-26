@@ -37,24 +37,22 @@ class TestRoPEComparison(CompareModule):
 
             batch_size, num_heads, seq_len, head_size = inputs["query"].shape
             num_key_value_heads = inputs["key"].shape[1]
-            # Reshape and permute traced tensors from Transformers to match SGLang's module
+            # Permute traced tensors from Transformers to match SGLang's module
             query = (
                 inputs["query"]
                 .permute(0, 2, 1, 3)
-                .reshape(batch_size * seq_len, num_heads * head_size)
+                .reshape(batch_size, seq_len, num_heads * head_size)
                 .cuda()
             )
             key = (
                 inputs["key"]
                 .permute(0, 2, 1, 3)
-                .reshape(batch_size * seq_len, num_key_value_heads * head_size)
+                .reshape(batch_size, seq_len, num_key_value_heads * head_size)
                 .cuda()
             )
-            position_ids = (
-                torch.arange(0, seq_len, dtype=torch.int64, device=query.device)
-                .repeat(batch_size, 1)
-                .unsqueeze(0)
-            )
+            position_ids = torch.arange(
+                seq_len, dtype=torch.int64, device=query.device
+            ).repeat(batch_size, 1)
             # Forward the module
             q_embed, k_embed = sgl_module(position_ids, query, key)
 
