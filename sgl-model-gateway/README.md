@@ -732,7 +732,8 @@ Configure headers for request ID extraction:
 Responses include `x-request-id` header for correlation.
 
 ### CORS
-Set `--cors-allowed-origins` for browser access.
+CORS is disabled by default. To enable browser access, set `--cors-allowed-origins`
+to one or more explicit origins.
 
 ## Security
 

@@ -69,7 +69,7 @@ class RouterArgs:
     queue_timeout_secs: int = 60
     # Token bucket refill rate (tokens per second). If not set, defaults to max_concurrent_requests
     rate_limit_tokens_per_second: Optional[int] = None
-    # CORS allowed origins
+    # Explicitly allowed CORS origins; an empty list disables CORS.
     cors_allowed_origins: List[str] = dataclasses.field(default_factory=list)
     # Retry configuration
     retry_max_retries: int = 5
@@ -450,7 +450,10 @@ class RouterArgs:
             type=str,
             nargs="*",
             default=[],
-            help="CORS allowed origins (e.g., http://localhost:3000 https://example.com)",
+            help=(
+                "Explicitly allowed CORS origins; an empty list disables CORS "
+                "(e.g., http://localhost:3000 https://example.com)"
+            ),
         )
 
         # Rate limiting configuration

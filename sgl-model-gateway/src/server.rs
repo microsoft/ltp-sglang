@@ -983,26 +983,177 @@ async fn shutdown_signal() {
 }
 
 fn create_cors_layer(allowed_origins: Vec<String>) -> tower_http::cors::CorsLayer {
-    use tower_http::cors::Any;
+    let origins: Vec<http::HeaderValue> = allowed_origins
+        .into_iter()
+        .filter_map(|origin| {
+            let parsed = match url::Url::parse(&origin) {
+                Ok(parsed) => parsed,
+                Err(_) => {
+                    warn!("Ignoring invalid CORS allowed origin: {origin}");
+                    return None;
+                }
+            };
+            if !matches!(parsed.scheme(), "http" | "https")
+                || parsed.host().is_none()
+                || !parsed.username().is_empty()
+                || parsed.password().is_some()
+                || parsed.path() != "/"
+                || parsed.query().is_some()
+                || parsed.fragment().is_some()
+            {
+                warn!("Ignoring invalid CORS allowed origin: {origin}");
+                return None;
+            }
 
-    let cors = if allowed_origins.is_empty() {
-        tower_http::cors::CorsLayer::new()
-            .allow_origin(Any)
-            .allow_methods(Any)
-            .allow_headers(Any)
-            .expose_headers(Any)
-    } else {
-        let origins: Vec<http::HeaderValue> = allowed_origins
-            .into_iter()
-            .filter_map(|origin| origin.parse().ok())
-            .collect();
+            match parsed.origin().ascii_serialization().parse() {
+                Ok(origin) => Some(origin),
+                Err(_) => {
+                    warn!("Ignoring invalid CORS allowed origin: {origin}");
+                    None
+                }
+            }
+        })
+        .collect();
 
-        tower_http::cors::CorsLayer::new()
-            .allow_origin(origins)
-            .allow_methods([http::Method::GET, http::Method::POST, http::Method::OPTIONS])
-            .allow_headers([http::header::CONTENT_TYPE, http::header::AUTHORIZATION])
-            .expose_headers([http::header::HeaderName::from_static("x-request-id")])
+    if origins.is_empty() {
+        return tower_http::cors::CorsLayer::new();
+    }
+
+    tower_http::cors::CorsLayer::new()
+        .allow_origin(origins)
+        .allow_methods([http::Method::GET, http::Method::POST])
+        .allow_headers([http::header::CONTENT_TYPE, http::header::AUTHORIZATION])
+        .expose_headers([http::header::HeaderName::from_static("x-request-id")])
+        .max_age(Duration::from_secs(3600))
+}
+
+#[cfg(test)]
+mod tests {
+    use axum::{
+        body::Body,
+        http::{header, Method, Request, StatusCode},
+        routing::post,
+        Router,
     };
+    use tower::ServiceExt;
 
-    cors.max_age(Duration::from_secs(3600))
+    use super::{create_cors_layer, RouterConfig};
+
+    fn cors_test_app(origins: Vec<String>) -> Router {
+        Router::new()
+            .route("/workers", post(|| async { StatusCode::NO_CONTENT }))
+            .route("/flush_cache", post(|| async { StatusCode::NO_CONTENT }))
+            .layer(create_cors_layer(origins))
+    }
+
+    fn cors_request(method: Method, path: &str, origin: &str) -> Request<Body> {
+        Request::builder()
+            .method(method)
+            .uri(path)
+            .header(header::ORIGIN, origin)
+            .body(Body::empty())
+            .unwrap()
+    }
+
+    #[tokio::test]
+    async fn empty_origins_do_not_allow_cross_origin_requests() {
+        let response = cors_test_app(RouterConfig::default().cors_allowed_origins)
+            .oneshot(cors_request(
+                Method::POST,
+                "/flush_cache",
+                "https://untrusted.example",
+            ))
+            .await
+            .unwrap();
+
+        assert!(response
+            .headers()
+            .get(header::ACCESS_CONTROL_ALLOW_ORIGIN)
+            .is_none());
+    }
+
+    #[tokio::test]
+    async fn empty_origins_do_not_approve_sensitive_preflights() {
+        let request = cors_request(Method::OPTIONS, "/workers", "https://untrusted.example");
+        let (mut parts, body) = request.into_parts();
+        parts.headers.insert(
+            header::ACCESS_CONTROL_REQUEST_METHOD,
+            http::HeaderValue::from_static("POST"),
+        );
+
+        let response = cors_test_app(vec![])
+            .oneshot(Request::from_parts(parts, body))
+            .await
+            .unwrap();
+
+        assert!(response
+            .headers()
+            .get(header::ACCESS_CONTROL_ALLOW_ORIGIN)
+            .is_none());
+        assert!(response
+            .headers()
+            .get(header::ACCESS_CONTROL_ALLOW_METHODS)
+            .is_none());
+    }
+
+    #[tokio::test]
+    async fn configured_origin_receives_cors_headers() {
+        let response = cors_test_app(vec!["https://allowed.example".to_string()])
+            .oneshot(cors_request(
+                Method::POST,
+                "/flush_cache",
+                "https://allowed.example",
+            ))
+            .await
+            .unwrap();
+
+        assert_eq!(
+            response
+                .headers()
+                .get(header::ACCESS_CONTROL_ALLOW_ORIGIN)
+                .unwrap(),
+            "https://allowed.example"
+        );
+        assert_eq!(
+            response
+                .headers()
+                .get(header::ACCESS_CONTROL_EXPOSE_HEADERS)
+                .unwrap(),
+            "x-request-id"
+        );
+    }
+
+    #[tokio::test]
+    async fn unlisted_origin_does_not_receive_cors_approval() {
+        let response = cors_test_app(vec!["https://allowed.example".to_string()])
+            .oneshot(cors_request(
+                Method::POST,
+                "/flush_cache",
+                "https://unlisted.example",
+            ))
+            .await
+            .unwrap();
+
+        assert!(response
+            .headers()
+            .get(header::ACCESS_CONTROL_ALLOW_ORIGIN)
+            .is_none());
+    }
+
+    #[tokio::test]
+    async fn invalid_origin_disables_cors_when_no_valid_origins_are_configured() {
+        let response = cors_test_app(vec!["not-an-origin".to_string()])
+            .oneshot(cors_request(
+                Method::POST,
+                "/flush_cache",
+                "https://untrusted.example",
+            ))
+            .await
+            .unwrap();
+
+        assert!(response
+            .headers()
+            .get(header::ACCESS_CONTROL_ALLOW_ORIGIN)
+            .is_none());
+    }
 }
