@@ -983,14 +983,8 @@ async fn shutdown_signal() {
 }
 
 fn create_cors_layer(allowed_origins: Vec<String>) -> tower_http::cors::CorsLayer {
-    use tower_http::cors::Any;
-
     let cors = if allowed_origins.is_empty() {
         tower_http::cors::CorsLayer::new()
-            .allow_origin(Any)
-            .allow_methods(Any)
-            .allow_headers(Any)
-            .expose_headers(Any)
     } else {
         let origins: Vec<http::HeaderValue> = allowed_origins
             .into_iter()
