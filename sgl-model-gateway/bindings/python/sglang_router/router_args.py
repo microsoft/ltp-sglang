@@ -450,7 +450,7 @@ class RouterArgs:
             type=str,
             nargs="*",
             default=[],
-            help="CORS allowed origins (e.g., http://localhost:3000 https://example.com)",
+            help="CORS allowed origins; empty disables CORS (e.g., http://localhost:3000 https://example.com)",
         )
 
         # Rate limiting configuration
