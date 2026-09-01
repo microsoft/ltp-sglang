@@ -983,26 +983,206 @@ async fn shutdown_signal() {
 }
 
 fn create_cors_layer(allowed_origins: Vec<String>) -> tower_http::cors::CorsLayer {
-    use tower_http::cors::Any;
-
     let cors = if allowed_origins.is_empty() {
         tower_http::cors::CorsLayer::new()
-            .allow_origin(Any)
-            .allow_methods(Any)
-            .allow_headers(Any)
-            .expose_headers(Any)
     } else {
         let origins: Vec<http::HeaderValue> = allowed_origins
             .into_iter()
-            .filter_map(|origin| origin.parse().ok())
+            .filter_map(|origin| match parse_cors_origin(&origin) {
+                Some(origin) => Some(origin),
+                None => {
+                    warn!("Ignoring invalid CORS allowed origin: {origin:?}");
+                    None
+                }
+            })
             .collect();
 
-        tower_http::cors::CorsLayer::new()
-            .allow_origin(origins)
-            .allow_methods([http::Method::GET, http::Method::POST, http::Method::OPTIONS])
-            .allow_headers([http::header::CONTENT_TYPE, http::header::AUTHORIZATION])
-            .expose_headers([http::header::HeaderName::from_static("x-request-id")])
+        if origins.is_empty() {
+            warn!("No valid CORS allowed origins configured; CORS remains disabled");
+            tower_http::cors::CorsLayer::new()
+        } else {
+            tower_http::cors::CorsLayer::new()
+                .allow_origin(origins)
+                .allow_methods([
+                    http::Method::GET,
+                    http::Method::POST,
+                    http::Method::OPTIONS,
+                    http::Method::PUT,
+                    http::Method::DELETE,
+                ])
+                .allow_headers([http::header::CONTENT_TYPE, http::header::AUTHORIZATION])
+                .expose_headers([http::header::HeaderName::from_static("x-request-id")])
+        }
     };
 
     cors.max_age(Duration::from_secs(3600))
+}
+
+fn parse_cors_origin(origin: &str) -> Option<http::HeaderValue> {
+    let url = url::Url::parse(origin).ok()?;
+
+    if !matches!(url.scheme(), "http" | "https")
+        || url.host_str().is_none()
+        || !url.username().is_empty()
+        || url.password().is_some()
+        || url.path() != "/"
+        || url.query().is_some()
+        || url.fragment().is_some()
+    {
+        return None;
+    }
+
+    url.origin().ascii_serialization().parse().ok()
+}
+
+#[cfg(test)]
+mod cors_tests {
+    use super::*;
+    use axum::{body::Body, routing::post};
+    use tower::ServiceExt;
+
+    const ALLOWED_ORIGIN: &str = "https://allowed.example";
+    const UNLISTED_ORIGIN: &str = "https://unlisted.example";
+
+    fn test_app(allowed_origins: Vec<String>) -> Router {
+        Router::new()
+            .route("/workers", post(|| async { StatusCode::OK }))
+            .route("/flush_cache", post(|| async { StatusCode::OK }))
+            .layer(create_cors_layer(allowed_origins))
+    }
+
+    async fn send_request(app: Router, method: http::Method, uri: &str, origin: &str) -> Response {
+        let request = Request::builder()
+            .method(method)
+            .uri(uri)
+            .header(http::header::ORIGIN, origin)
+            .body(Body::empty())
+            .unwrap();
+
+        app.oneshot(request).await.unwrap()
+    }
+
+    async fn send_preflight(
+        app: Router,
+        uri: &str,
+        origin: &str,
+        request_method: http::Method,
+    ) -> Response {
+        let request = Request::builder()
+            .method(http::Method::OPTIONS)
+            .uri(uri)
+            .header(http::header::ORIGIN, origin)
+            .header(
+                http::header::ACCESS_CONTROL_REQUEST_METHOD,
+                request_method.as_str(),
+            )
+            .header(
+                http::header::ACCESS_CONTROL_REQUEST_HEADERS,
+                "content-type, authorization",
+            )
+            .body(Body::empty())
+            .unwrap();
+
+        app.oneshot(request).await.unwrap()
+    }
+
+    #[tokio::test]
+    async fn empty_origins_do_not_emit_allow_origin_for_origin_request() {
+        let response = send_request(
+            test_app(vec![]),
+            http::Method::POST,
+            "/flush_cache",
+            ALLOWED_ORIGIN,
+        )
+        .await;
+
+        assert!(!response
+            .headers()
+            .contains_key(http::header::ACCESS_CONTROL_ALLOW_ORIGIN));
+    }
+
+    #[tokio::test]
+    async fn empty_origins_do_not_approve_preflight_to_sensitive_route() {
+        let response = send_preflight(
+            test_app(vec![]),
+            "/workers",
+            ALLOWED_ORIGIN,
+            http::Method::POST,
+        )
+        .await;
+
+        assert!(!response
+            .headers()
+            .contains_key(http::header::ACCESS_CONTROL_ALLOW_ORIGIN));
+        assert!(!response
+            .headers()
+            .contains_key(http::header::ACCESS_CONTROL_ALLOW_METHODS));
+    }
+
+    #[tokio::test]
+    async fn configured_origin_receives_expected_cors_headers() {
+        let app = test_app(vec![ALLOWED_ORIGIN.to_string()]);
+        let response = send_preflight(app, "/workers", ALLOWED_ORIGIN, http::Method::DELETE).await;
+
+        assert_eq!(
+            response
+                .headers()
+                .get(http::header::ACCESS_CONTROL_ALLOW_ORIGIN)
+                .unwrap(),
+            ALLOWED_ORIGIN
+        );
+
+        let allowed_methods = response
+            .headers()
+            .get(http::header::ACCESS_CONTROL_ALLOW_METHODS)
+            .unwrap()
+            .to_str()
+            .unwrap();
+        assert!(allowed_methods.contains("GET"));
+        assert!(allowed_methods.contains("POST"));
+        assert!(allowed_methods.contains("PUT"));
+        assert!(allowed_methods.contains("DELETE"));
+
+        let allowed_headers = response
+            .headers()
+            .get(http::header::ACCESS_CONTROL_ALLOW_HEADERS)
+            .unwrap()
+            .to_str()
+            .unwrap();
+        assert!(allowed_headers.contains("content-type"));
+        assert!(allowed_headers.contains("authorization"));
+    }
+
+    #[tokio::test]
+    async fn unlisted_origin_does_not_receive_approval() {
+        let response = send_preflight(
+            test_app(vec![ALLOWED_ORIGIN.to_string()]),
+            "/workers",
+            UNLISTED_ORIGIN,
+            http::Method::POST,
+        )
+        .await;
+
+        assert!(!response
+            .headers()
+            .contains_key(http::header::ACCESS_CONTROL_ALLOW_ORIGIN));
+    }
+
+    #[tokio::test]
+    async fn invalid_origins_fail_safely() {
+        let response = send_preflight(
+            test_app(vec!["not an origin".to_string()]),
+            "/workers",
+            ALLOWED_ORIGIN,
+            http::Method::POST,
+        )
+        .await;
+
+        assert!(!response
+            .headers()
+            .contains_key(http::header::ACCESS_CONTROL_ALLOW_ORIGIN));
+        assert!(!response
+            .headers()
+            .contains_key(http::header::ACCESS_CONTROL_ALLOW_METHODS));
+    }
 }

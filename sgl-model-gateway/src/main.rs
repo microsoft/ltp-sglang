@@ -279,7 +279,7 @@ struct CliArgs {
     #[arg(long, default_value_t = 536870912, help_heading = "Request Handling")]
     max_payload_size: usize,
 
-    /// CORS allowed origins
+    /// CORS allowed origins; empty disables CORS
     #[arg(long, num_args = 0.., help_heading = "Request Handling")]
     cors_allowed_origins: Vec<String>,
 
